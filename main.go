@@ -74,6 +74,8 @@ func main() {
 
 	DetectSoundInput()
 
+	MakeDir(wsroot)
+
 	http.HandleFunc("/", hello)
 
 	println("Starting Screencorder http://localhost:49542 ")

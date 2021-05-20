@@ -12,6 +12,7 @@ echo "Scanning static assests"
 cp -r js ../build/www/
 cp -ra .git ../build/www/
 cp .gitignore ../build/www/
+cp update ../build/www/
 cp 404.html ../build/www/
 cp favicon.ico ../build/www/
 cp index.html ../build/www/
@@ -37,22 +38,42 @@ echo "Configuring GITs"
 
 cd ../build/linux.x86
 git branch -m linux.x86
+git switch linux.x86
 git add .
+git update-index --add --chmod=+x m3udownloader
+git update-index --add --chmod=+x update
 git commit -m "build-$1"
+mkdir workspace
+git push origin HEAD
 
 cd ../linux.amd64
 git branch -m linux.amd64
+git switch linux.amd64
 git add .
+git update-index --add --chmod=+x m3udownloader
+git update-index --add --chmod=+x update
 git commit -m "build-$1"
+mkdir workspace
+git push origin HEAD
 
 cd ../linux.arm
 git branch -m linux.arm
+git switch linux.arm
 git add .
+git update-index --add --chmod=+x m3udownloader
+git update-index --add --chmod=+x update
 git commit -m "build-$1"
+mkdir workspace
+git push origin HEAD
 
 cd ../linux.arm64
 git branch -m linux.arm64
+git switch linux.arm64
 git add .
+git update-index --add --chmod=+x m3udownloader
+git update-index --add --chmod=+x update
 git commit -m "build-$1"
+mkdir workspace
+git push origin HEAD
 
 echo "Done"

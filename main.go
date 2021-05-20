@@ -83,7 +83,7 @@ func main() {
 	}
 }
 
-var SpeakerInputName string
+var SpeakerInputName string = ""
 
 func DetectSoundInput() {
 

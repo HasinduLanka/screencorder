@@ -13,8 +13,11 @@ func ChunkRecieved(path string, chunk []byte) {
 
 func FinalRecieved(path string, body []byte) {
 	// End Audio recording
-	AudioTasks[path] <- false
-	delete(AudioTasks, path)
+	EndTask, found := AudioTasks[path]
+	if found {
+		EndTask <- false
+		delete(AudioTasks, path)
+	}
 
 	WriteFile(wsroot+path+".fflist", body)
 
@@ -29,6 +32,7 @@ func FinalRecieved(path string, body []byte) {
 
 	ExcecCmd("rm -f ./" + path + "-*.webm")
 	ExcecCmd("rm -f ./" + path + ".fflist")
+	ExcecCmd("rm -f ./" + path + ".mp3")
 
 }
 
@@ -40,6 +44,9 @@ func Handshake(path string) []byte {
 func StartRec(path string) []byte {
 	// ExcecProgram("echo", "start recording")
 	EndTask := make(chan bool)
+	if len(SpeakerInputName) == 0 {
+		return []byte("No Audio")
+	}
 	go ExcecCmdTask("parec -d alsa_output.pci-0000_00_1f.3.analog-stereo.monitor | lame -r -V0 - "+path+".mp3", EndTask)
 	AudioTasks[path] = EndTask
 	return []byte("Started")

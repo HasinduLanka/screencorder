@@ -71,10 +71,11 @@ func main() {
 	println("         project written by           ")
 	println("             Bitblazers               ")
 	println("                                      ")
+	println("       Github.com/HasinduLanka        ")
 	println("       Github.com/Bitblazers-lk       ")
 	println("--------------------------------------")
 	println("                                      ")
-	
+
 	CheckError(InitExec())
 
 	HiOut, HiErr := ExcecCmd("echo 'System calls working'")

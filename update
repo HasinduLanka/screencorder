@@ -3,6 +3,8 @@
 
 cd "$(dirname "$0")"
 
+echo "Updating..."
+
 git reset --hard 
 git config pull.rebase false
 git pull origin 

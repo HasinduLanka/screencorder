@@ -14,7 +14,7 @@ func InitExec() error {
 		path, err := exec.LookPath(key)
 		if err != nil {
 			println("Some excecutables not found. Please make sure you have installed all the needed dependencies.")
-			println("On Debian/Ubuntu - try running sudo apt-get install pulseaudio-utils lame mpg123")
+			println("On Debian/Ubuntu - try running sudo apt-get install pulseaudio-utils lame mpg123 ffmpeg")
 			return err
 		}
 		Excecutables[key] = path

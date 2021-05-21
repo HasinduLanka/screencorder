@@ -1,0 +1,15 @@
+{
+  "name": "Screencorder",
+  "short_name": "Screencorder",
+  "start_url": "./",
+  "display": "minimal-ui",
+  "background_color": "#ffffff",
+  "theme_color": "#03173d",
+  "icons": [
+    {
+      "src": "screen.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

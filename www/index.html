@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<!--
+ *  Copyright (c) 2018 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+-->
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="description" content="Screencorder - Simple screen recorder for Linux on Wayland and X11">
+  <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+  <meta itemprop="description" content="Screencorder - Simple screen recorder for Linux on Wayland and X11">
+  <meta itemprop="name" content="Screencorder">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta id="theme-color" name="theme-color" content="#000000">
+  <link rel="manifest" href="manifest.json">
+
+  <base target="_blank">
+
+  <title>Screencorder</title>
+
+
+</head>
+
+<body>
+
+  <div>
+
+    <div id="DivSetQlt">
+      <button id="startRecButton" style="width: 90%; height: 2rem;" disabled>Start and Record</button>
+      <br>
+      <button id="startButton" style="width: 90%; height: 2rem;" disabled>Start Mirror</button>
+      <br>
+      <br>
+      <br>
+      <button id="BtnQltOriginal" style="width: 90%; height: 2rem;" onclick="SetQlt(0)"> Set Original Quality </button>
+      <br>
+      <button id="BtnQltOriginal" style="width: 90%; height: 2rem;" onclick="SetQlt(100)"> Optimize for text Quality
+      </button>
+      <br>
+      <button id="BtnQltFullHD" style="width: 90%; height: 2rem;" onclick="SetQlt(1)"> Set Full HD Quality </button>
+      <br>
+      <button id="BtnQltHD" style="width: 90%; height: 2rem;" onclick="SetQlt(2)"> Set HD Quality </button>
+      <br>
+      <button id="BtnQltMD" style="width: 90%; height: 2rem;" onclick="SetQlt(3)"> Set Medium Quality </button>
+      <br>
+      <button id="BtnQltSD" style="width: 90%; height: 2rem;" onclick="SetQlt(4)"> Set Low Quality </button>
+      <br>
+      <button id="BtnQltLL" style="width: 90%; height: 2rem;" onclick="SetQlt(5)"> Set Lowest Quality </button>
+      <br>
+    </div>
+    <br>
+    <br>
+
+    <video id="gum-local" style="width: 90%" autoplay playsinline muted controls></video>
+    <br>
+    <br />
+
+    <br>
+
+
+    <h1> Simple screen recorder for Linux on Wayland and X11</h1>
+    <div id="errorMsg"></div>
+
+  </div>
+
+
+
+  <!-- <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script> -->
+  <script src="js/adapter-latest.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.register('serviceworker.js', { scope: '/' })
+    }
+  </script>
+
+</body>
+
+</html>

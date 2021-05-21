@@ -10,7 +10,7 @@ mkdir -p ../build/www
 echo "Scanning static assests"
 
 cp -r js ../build/www/
-cp -ra .git ../build/www/
+cp -ra ../git/.git ../build/www/
 cp .gitignore ../build/www/
 cp update ../build/www/
 cp 404.html ../build/www/

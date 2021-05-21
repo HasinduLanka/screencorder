@@ -13,6 +13,8 @@ func InitExec() error {
 	for key := range Excecutables {
 		path, err := exec.LookPath(key)
 		if err != nil {
+			println("Some excecutables not found. Please make sure you have installed all the needed dependencies.")
+			println("On Debian/Ubuntu - try running sudo apt-get install pulseaudio-utils lame mpg123")
 			return err
 		}
 		Excecutables[key] = path

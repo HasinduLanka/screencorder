@@ -27,6 +27,8 @@ cp -ra ../build/www ../build/linux.amd64
 cp -ra ../build/www ../build/linux.arm
 cp -ra ../build/www ../build/linux.arm64
 
+./config.git.sh
+
 echo "Building for Linux"
 
 env GOOS=linux GOARCH=386 go build -o ../build/linux.x86/m3udownloader .
@@ -37,43 +39,43 @@ env GOOS=linux GOARCH=arm64 go build -o ../build/linux.arm64/m3udownloader .
 echo "Configuring GITs"
 
 cd ../build/linux.x86
+mkdir -p workspace
 git branch -m linux.x86
 git switch linux.x86
 git add .
 git update-index --add --chmod=+x m3udownloader
 git update-index --add --chmod=+x update
 git commit -m "build-$1"
-mkdir workspace
 git push origin HEAD
 
 cd ../linux.amd64
+mkdir -p workspace
 git branch -m linux.amd64
 git switch linux.amd64
 git add .
 git update-index --add --chmod=+x m3udownloader
 git update-index --add --chmod=+x update
 git commit -m "build-$1"
-mkdir workspace
 git push origin HEAD
 
 cd ../linux.arm
+mkdir -p workspace
 git branch -m linux.arm
 git switch linux.arm
 git add .
 git update-index --add --chmod=+x m3udownloader
 git update-index --add --chmod=+x update
 git commit -m "build-$1"
-mkdir workspace
 git push origin HEAD
 
 cd ../linux.arm64
+mkdir -p workspace
 git branch -m linux.arm64
 git switch linux.arm64
 git add .
 git update-index --add --chmod=+x m3udownloader
 git update-index --add --chmod=+x update
 git commit -m "build-$1"
-mkdir workspace
 git push origin HEAD
 
 echo "Done"

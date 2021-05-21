@@ -19,8 +19,10 @@ var RecordEnabled = true;
 var QualityOptions = { mimeType: 'video/webm' }
 var GUMConstraints = { video: true };
 
-var filename = "Record-" + Date.now().toString()
-var fileindex = 1
+var filename = "Record-" + Date.now().toString();
+var fileindex = 1;
+var finalFiles = [];
+var IsRecording = false;
 
 GetURL("handshake/" + filename)
 
@@ -74,6 +76,7 @@ function handleSuccess(stream) {
   // sharing the screen via the browser UI.
   stream.getVideoTracks()[0].addEventListener('ended', () => {
     errorMsg('The user has ended sharing the screen');
+    IsRecording = false;
 
     startButton.disabled = false;
     startRecButton.disabled = false;
@@ -85,32 +88,29 @@ function handleSuccess(stream) {
     console.log(stream);
     GetURL("start/" + filename)
     // var options = { mimeType: "video/webm; codecs=vp8" };
-
+    IsRecording = true;
     mediaRecorder = new MediaRecorder(stream, QualityOptions);
 
     mediaRecorder.ondataavailable = handleDataAvailable;
     mediaRecorder.start();
 
 
+
     setTimeout(event => {
-      mediaRecorder.stop();
-      mediaRecorder.start();
-      setTimeout(event => {
-        RestartMediaRecorder()
-      }, 2000);
-    }, 2000);
+      RestartMediaRecorder()
+    }, 10000);
   }
 }
 
 
 function RestartMediaRecorder() {
   console.log("Chunk done");
-  if (mediaRecorder.state === "recording") {
+  if (IsRecording) {
     mediaRecorder.stop();
     mediaRecorder.start();
     setTimeout(event => {
       RestartMediaRecorder()
-    }, 5000);
+    }, 20000);
   }
 
 }
@@ -118,21 +118,8 @@ function RestartMediaRecorder() {
 var recordedChunks = [];
 
 
-function FinalizeRecord() {
 
-  var fflist = "";
-
-  for (let i = 1; i < fileindex; i++) {
-    fflist = fflist + "file '" + filename + "-" + pad(i) + ".webm'\n";
-  }
-
-  uploadText("final/" + filename, fflist)
-
-  filename = "Record-" + Date.now().toString()
-  fileindex = 1
-}
-
-function downloadText(txt, filename) {
+async function downloadText(txt, filename) {
   var blob = new Blob([txt], { type: 'text/plain' });
 
   // this will create a link tag on the fly
@@ -155,13 +142,54 @@ function handleDataAvailable(event) {
     console.log(recordedChunks);
     // download();
     uploadRecorded();
+    if (fileindex >= 5 || !IsRecording) {
+      FinalizeRecord()
+      if (IsRecording) {
+        GetURL("start/" + filename)
+      }
+    }
   } else {
     // ...
   }
 
-  if (mediaRecorder.state != "recording") {
-    FinalizeRecord()
+  if (!IsRecording) {
+    EndRecord()
   }
+
+
+}
+
+
+function FinalizeRecord() {
+
+  finalFiles.push(filename);
+
+  var fflist = "";
+
+  for (let i = 1; i < fileindex; i++) {
+    fflist = fflist + "file '" + filename + "-" + pad(i) + ".webm'\n";
+  }
+
+  uploadText("final/" + filename, fflist)
+
+  filename = "Record-" + Date.now().toString()
+  fileindex = 1
+}
+
+
+function EndRecord() {
+
+  var fflist = "";
+
+  finalFiles.forEach(f => {
+    fflist = fflist + "file '" + f + ".webm'\n";
+  });
+
+  uploadText("end/" + filename, fflist)
+
+  filename = "Record-" + Date.now().toString()
+  fileindex = 1
+  finalFiles = [];
 }
 
 function download() {
@@ -190,13 +218,13 @@ function uploadRecorded() {
 
   recordedChunks = []
 }
-function uploadText(path, txt) {
+async function uploadText(path, txt) {
   var blob = new Blob([txt], { type: 'text/plain' });
   uploadBlob(path, blob);
 }
 
 //http://localhost:49542
-function uploadBlob(path, blob) {
+async function uploadBlob(path, blob) {
   fetch(`/` + path, { method: "POST", body: blob, mode: 'no-cors' })
     .then(response => response.text().then(value => console.log(value)))
 }
@@ -207,7 +235,7 @@ function pad(num) {
 }
 
 //http://localhost:49542
-function GetURL(path) {
+async function GetURL(path) {
   fetch(`/` + path, { method: "GET", mode: 'no-cors' })
     .then(response => response.text().then(value => console.log(value)))
 }

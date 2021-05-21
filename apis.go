@@ -1,23 +1,34 @@
 package main
 
+import (
+	"regexp"
+	"strings"
+	"time"
+)
+
 // var ifile int = 1
 
-type API_POST_Recieved func(string, []byte)
+type API_POST_Recieved func(string, []byte) []byte
 type API_GET_Recieved func(string) []byte
 
 var AudioTasks map[string]chan bool = map[string]chan bool{}
+var FinalizingDone map[string]bool = map[string]bool{}
 
-func ChunkRecieved(path string, chunk []byte) {
+func ChunkRecieved(path string, chunk []byte) []byte {
 	WriteFile(wsroot+path+".webm", chunk)
+	return []byte("Host recieved " + path)
 }
 
-func FinalRecieved(path string, body []byte) {
+func FinalRecieved(path string, body []byte) []byte {
 	// End Audio recording
 	EndTask, found := AudioTasks[path]
 	if found {
 		EndTask <- false
 		delete(AudioTasks, path)
 	}
+
+	FinalizingDone[path+".webm"] = false
+	println("Finalizing " + path)
 
 	WriteFile(wsroot+path+".fflist", body)
 
@@ -34,6 +45,56 @@ func FinalRecieved(path string, body []byte) {
 	ExcecCmd("rm -f ./" + path + ".fflist")
 	ExcecCmd("rm -f ./" + path + ".mp3")
 
+	delete(FinalizingDone, path+".webm")
+	println("Finalized " + path)
+
+	return []byte("Final Recieved " + path)
+}
+
+func EndRecieved(path string, body []byte) []byte {
+	println("Ending " + path)
+
+	WriteFile(wsroot+path+".end.fflist", body)
+
+	Sbody := string(body)
+	re := regexp.MustCompile("file '(.*)'")
+	matches := re.FindAllStringSubmatch(Sbody, -1)
+
+	FinalFiles := make([]string, len(matches))
+
+	for i, match := range matches {
+		if len(match) == 2 {
+			fl := match[1]
+			println("Checking " + fl)
+			FinalFiles[i] = wsroot + fl
+
+			_, contains := FinalizingDone[fl]
+			for contains {
+				println("Waiting for " + fl)
+				time.Sleep(1 * time.Second)
+				_, contains = FinalizingDone[fl]
+			}
+
+		} else {
+			println("Parse error " + wsroot + strings.Join(match, ", "))
+		}
+	}
+
+	HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".end.fflist", "-c", "copy", path+".rec.webm")
+
+	println(HiOut)
+	PrintError(HiErr)
+
+	for _, match := range FinalFiles {
+		println("Delete file " + match)
+		DeleteFiles(match)
+	}
+
+	// ExcecCmd("rm -f ./" + path + "-*.webm")
+	DeleteFiles(wsroot + path + ".end.fflist")
+	println("Ended " + path)
+
+	return []byte("End Recieved " + path)
 }
 
 func Handshake(path string) []byte {

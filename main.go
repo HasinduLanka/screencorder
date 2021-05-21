@@ -12,7 +12,7 @@ import (
 
 var wsroot string = "workspace/"
 
-var API_POSTs map[string]API_POST_Recieved = map[string]API_POST_Recieved{"chunk": ChunkRecieved, "final": FinalRecieved}
+var API_POSTs map[string]API_POST_Recieved = map[string]API_POST_Recieved{"chunk": ChunkRecieved, "final": FinalRecieved, "end": EndRecieved}
 var API_GETs map[string]API_GET_Recieved = map[string]API_GET_Recieved{"start": StartRec, "handshake": Handshake}
 
 func hello(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +28,9 @@ func hello(w http.ResponseWriter, r *http.Request) {
 
 		for apiPath, api := range API_GETs {
 			if strings.HasPrefix(urlpath, apiPath) {
-				api(strings.TrimPrefix(urlpath, apiPath+"/"))
+				resp := api(strings.TrimPrefix(urlpath, apiPath+"/"))
+				w.Write(resp)
+
 				return
 			}
 		}
@@ -49,7 +51,8 @@ func hello(w http.ResponseWriter, r *http.Request) {
 
 		for apiPath, api := range API_POSTs {
 			if strings.HasPrefix(urlpath, apiPath) {
-				api(strings.TrimPrefix(urlpath, apiPath+"/"), body)
+				resp := api(strings.TrimPrefix(urlpath, apiPath+"/"), body)
+				w.Write(resp)
 			}
 		}
 
@@ -59,7 +62,14 @@ func hello(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	println("")
+	println("--------------------")
+	println("    Screencorder    ")
+	println("--------------------")
+	println("")
+
 	CheckError(InitExec())
+
 	HiOut, HiErr := ExcecCmd("echo 'System calls working'")
 	println(HiOut)
 	if HiErr != nil {

@@ -2,6 +2,9 @@
 
 echo Commit $1
 
+echo "Updating git"
+./config-update-git.sh
+
 echo "Cleaning up"
 
 rm -rf ../build

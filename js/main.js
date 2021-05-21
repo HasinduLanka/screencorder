@@ -257,7 +257,7 @@ function SetQlt(q) {
         videoBitsPerSecond: 8000000,
         mimeType: 'video/webm'
       }
-      GUMConstraints = { video: { frameRate: { ideal: 30, max: 60 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 60, max: 60 } } };
       break;
 
     case 2:

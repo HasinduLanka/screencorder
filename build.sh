@@ -34,10 +34,10 @@ cp -ra ../build/www ../build/linux.arm64
 
 echo "Building for Linux"
 
-env GOOS=linux GOARCH=386 go build -o ../build/linux.x86/m3udownloader .
-env GOOS=linux GOARCH=amd64 go build -o ../build/linux.amd64/m3udownloader .
-env GOOS=linux GOARCH=arm go build -o ../build/linux.arm/m3udownloader .
-env GOOS=linux GOARCH=arm64 go build -o ../build/linux.arm64/m3udownloader .
+env GOOS=linux GOARCH=386 go build -o ../build/linux.x86/screencorder .
+env GOOS=linux GOARCH=amd64 go build -o ../build/linux.amd64/screencorder .
+env GOOS=linux GOARCH=arm go build -o ../build/linux.arm/screencorder .
+env GOOS=linux GOARCH=arm64 go build -o ../build/linux.arm64/screencorder .
 
 echo "Configuring GITs"
 
@@ -46,7 +46,7 @@ mkdir -p workspace
 git branch -m linux.x86
 git switch linux.x86
 git add .
-git update-index --add --chmod=+x m3udownloader
+git update-index --add --chmod=+x screencorder
 git update-index --add --chmod=+x update
 git commit -m "build-$1"
 git push origin HEAD
@@ -56,7 +56,7 @@ mkdir -p workspace
 git branch -m linux.amd64
 git switch linux.amd64
 git add .
-git update-index --add --chmod=+x m3udownloader
+git update-index --add --chmod=+x screencorder
 git update-index --add --chmod=+x update
 git commit -m "build-$1"
 git push origin HEAD
@@ -66,7 +66,7 @@ mkdir -p workspace
 git branch -m linux.arm
 git switch linux.arm
 git add .
-git update-index --add --chmod=+x m3udownloader
+git update-index --add --chmod=+x screencorder
 git update-index --add --chmod=+x update
 git commit -m "build-$1"
 git push origin HEAD
@@ -76,7 +76,7 @@ mkdir -p workspace
 git branch -m linux.arm64
 git switch linux.arm64
 git add .
-git update-index --add --chmod=+x m3udownloader
+git update-index --add --chmod=+x screencorder
 git update-index --add --chmod=+x update
 git commit -m "build-$1"
 git push origin HEAD

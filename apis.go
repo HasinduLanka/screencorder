@@ -8,18 +8,49 @@ import (
 
 // var ifile int = 1
 
-type API_POST_Recieved func(string, []byte) []byte
-type API_GET_Recieved func(string) []byte
+type API_POST_Recieved func(string, []byte) Response
+type API_GET_Recieved func(string) Response
+
+type Response struct {
+	body    []byte
+	headers map[string]string
+}
+
+func BodyResponse(body []byte) Response {
+	return Response{body, map[string]string{}}
+}
 
 var AudioTasks map[string]chan bool = map[string]chan bool{}
 var FinalizingDone map[string]bool = map[string]bool{}
 
-func ChunkRecieved(path string, chunk []byte) []byte {
+var ViewerChunk []byte
+var ViewerChunkPath string
+
+func MirrorAndRecChunkRecieved(path string, chunk []byte) Response {
 	WriteFile(wsroot+path+".webm", chunk)
-	return []byte("Host recieved " + path)
+	ExcecCmd("ffmpeg -i " + path + ".webm -vcodec libvpx -cpu-used -8 -deadline realtime -c copy " + path + ".m.webm")
+
+	var err error
+	ViewerChunk, err = LoadFile(wsroot + path + ".m.webm")
+	PrintError(err)
+	ViewerChunkPath = path
+
+	return BodyResponse([]byte("Host recieved " + path))
 }
 
-func FinalRecieved(path string, body []byte) []byte {
+func RecChunkRecieved(path string, chunk []byte) Response {
+	go WriteFile(wsroot+path+".webm", chunk)
+	return BodyResponse([]byte("Host recieved " + path))
+}
+
+func MirrorChunkRecieved(path string, chunk []byte) Response {
+	resp := MirrorAndRecChunkRecieved(path, chunk)
+	go DeleteFiles(wsroot + path + ".webm")
+	go DeleteFiles(wsroot + path + ".m.webm")
+	return resp
+}
+
+func FinalRecieved(path string, body []byte) Response {
 	// End Audio recording
 	EndTask, found := AudioTasks[path]
 	if found {
@@ -48,10 +79,10 @@ func FinalRecieved(path string, body []byte) []byte {
 	delete(FinalizingDone, path+".webm")
 	println("Finalized " + path)
 
-	return []byte("Final Recieved " + path)
+	return BodyResponse([]byte("Final Recieved " + path))
 }
 
-func EndRecieved(path string, body []byte) []byte {
+func EndRecieved(path string, body []byte) Response {
 	println("Ending " + path)
 
 	WriteFile(wsroot+path+".end.fflist", body)
@@ -94,21 +125,44 @@ func EndRecieved(path string, body []byte) []byte {
 	DeleteFiles(wsroot + path + ".end.fflist")
 	println("Ended " + path)
 
-	return []byte("End Recieved " + path)
+	return BodyResponse([]byte("End Recieved " + path))
 }
 
-func Handshake(path string) []byte {
+func Handshake(path string) Response {
 	ExcecProgram("echo", "Host Ready")
-	return []byte("Host Ready")
+	return BodyResponse([]byte("Host Ready"))
 }
 
-func StartRec(path string) []byte {
+func StartRec(path string) Response {
 	// ExcecProgram("echo", "start recording")
 	EndTask := make(chan bool)
 	if len(SpeakerInputName) == 0 {
-		return []byte("No Audio")
+		return BodyResponse([]byte("No Audio"))
 	}
-	go ExcecCmdTask("parec -d alsa_output.pci-0000_00_1f.3.analog-stereo.monitor | lame -r -V0 - "+path+".mp3", EndTask)
+	go ExcecCmdTask("parec -d "+SpeakerInputName+".monitor | lame -r -V0 - "+path+".mp3", EndTask)
 	AudioTasks[path] = EndTask
-	return []byte("Started")
+	return BodyResponse([]byte("Started with audio"))
+}
+
+func StartRecOnlyMirror(path string) Response {
+	return BodyResponse([]byte("Started only mirror"))
+}
+
+func View(path string) Response {
+	if len(ViewerChunkPath) == 0 {
+		println("Viewer : waiting ")
+		return Response{[]byte{}, map[string]string{"cpath": "wait"}}
+	}
+
+	if path == "new" {
+		println("Viewer : new : " + ViewerChunkPath)
+		return Response{ViewerChunk, map[string]string{"cpath": ViewerChunkPath}}
+	} else if path == ViewerChunkPath {
+		println("Viewer : same")
+		return Response{[]byte{}, map[string]string{"cpath": "same"}}
+	} else {
+		println("Viewer : " + ViewerChunkPath)
+		return Response{ViewerChunk, map[string]string{"cpath": ViewerChunkPath}}
+	}
+
 }

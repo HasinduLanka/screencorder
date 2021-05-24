@@ -12,10 +12,21 @@ import (
 
 var wsroot string = "workspace/"
 
-var API_POSTs map[string]API_POST_Recieved = map[string]API_POST_Recieved{"chunk": ChunkRecieved, "final": FinalRecieved, "end": EndRecieved}
-var API_GETs map[string]API_GET_Recieved = map[string]API_GET_Recieved{"start": StartRec, "handshake": Handshake}
+var API_POSTs map[string]API_POST_Recieved = map[string]API_POST_Recieved{
+	"api/recchunk":    RecChunkRecieved,
+	"api/mirrorchunk": MirrorChunkRecieved,
+	"api/mirecchunk":  MirrorAndRecChunkRecieved,
+	"api/final":       FinalRecieved,
+	"api/end":         EndRecieved}
 
-func hello(w http.ResponseWriter, r *http.Request) {
+var API_GETs map[string]API_GET_Recieved = map[string]API_GET_Recieved{
+	"api/start":     StartRec,
+	"api/mstart":    StartRecOnlyMirror,
+	"api/handshake": Handshake,
+	"api/reqview":   View,
+	"mapi/reqview":  View}
+
+func ServeFull(w http.ResponseWriter, r *http.Request) {
 	// if r.URL.Path != "/" {
 	// 	http.Error(w, "404 not found.", http.StatusNotFound)
 	// 	return
@@ -29,8 +40,14 @@ func hello(w http.ResponseWriter, r *http.Request) {
 		for apiPath, api := range API_GETs {
 			if strings.HasPrefix(urlpath, apiPath) {
 				resp := api(strings.TrimPrefix(urlpath, apiPath+"/"))
-				w.Write(resp)
-
+				if resp.headers != nil {
+					for k, v := range resp.headers {
+						w.Header().Set(k, v)
+					}
+				}
+				if len(resp.body) > 0 {
+					w.Write(resp.body)
+				}
 				return
 			}
 		}
@@ -52,13 +69,34 @@ func hello(w http.ResponseWriter, r *http.Request) {
 		for apiPath, api := range API_POSTs {
 			if strings.HasPrefix(urlpath, apiPath) {
 				resp := api(strings.TrimPrefix(urlpath, apiPath+"/"), body)
-				w.Write(resp)
+
+				if resp.headers != nil {
+					for k, v := range resp.headers {
+						w.Header().Set(k, v)
+					}
+				}
+				if len(resp.body) > 0 {
+					w.Write(resp.body)
+				}
+
 			}
 		}
 
 	default:
 		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
 	}
+}
+
+func ServeMirrorAsRoot(w http.ResponseWriter, r *http.Request) {
+
+	urlpath := strings.ReplaceAll(strings.TrimPrefix(r.URL.Path, "/"), "..", "")
+
+	if len(urlpath) == 0 || urlpath == "index.html" || urlpath == "index" {
+		http.Redirect(w, r, "/mirror/viewer.html", http.StatusSeeOther)
+	} else if strings.HasPrefix(urlpath, "mapi/") || strings.HasPrefix(urlpath, "mirror/") {
+		ServeFull(w, r)
+	}
+
 }
 
 func main() {
@@ -94,11 +132,24 @@ func main() {
 
 	MakeDir(wsroot)
 
-	http.HandleFunc("/", hello)
+	MirrorMux := http.NewServeMux()
+	FullMux := http.NewServeMux()
+
+	// MirrorMux.HandleFunc("/mirror/", ServeFull)
+	// MirrorMux.HandleFunc("/api/", ServeFull)
+	MirrorMux.HandleFunc("/", ServeMirrorAsRoot)
+	FullMux.HandleFunc("/", ServeFull)
 
 	println("Starting Screencorder http://localhost:49542 ")
 	go ExcecProgram("xdg-open", "http://localhost:49542")
-	if err := http.ListenAndServe(":49542", nil); err != nil {
+
+	go func() {
+		if err := http.ListenAndServe(":49543", MirrorMux); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	if err := http.ListenAndServe("localhost:49542", FullMux); err != nil {
 		log.Fatal(err)
 	}
 }

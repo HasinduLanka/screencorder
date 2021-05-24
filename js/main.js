@@ -15,9 +15,15 @@ if (adapter.browserDetails.browser == 'firefox') {
 
 const video = document.querySelector('video');
 var mediaRecorder;
-var RecordEnabled = true;
 var QualityOptions = { mimeType: 'video/webm' }
 var GUMConstraints = { video: true };
+
+var MirrorEnabled = false;
+var RecordEnabled = false;
+var chunksPerStack = 30; // 30 || 5
+var chunkLength = 1500; // 1500 || 10000
+var chunkUploadURI = "chunk/";
+var startURI = "start/";
 
 var filename = "Record-" + Date.now().toString();
 var fileindex = 1;
@@ -28,6 +34,46 @@ GetURL("handshake/" + filename)
 
 const DivSetQlt = document.getElementById('DivSetQlt');
 
+
+
+
+function StartMirror() {
+  RecordEnabled = false;
+  MirrorEnabled = true;
+
+  chunksPerStack = 30;
+  chunkLength = 1500;
+  chunkUploadURI = "mirrorchunk/";
+  startURI = "mstart/";
+
+  navigator.mediaDevices.getDisplayMedia(GUMConstraints)
+    .then(handleSuccess, handleError);
+}
+
+function StartRec() {
+  RecordEnabled = true;
+  MirrorEnabled = false;
+
+  chunksPerStack = 5;
+  chunkLength = 10000;
+  chunkUploadURI = "recchunk/";
+  startURI = "start/";
+
+  navigator.mediaDevices.getDisplayMedia(GUMConstraints)
+    .then(handleSuccess, handleError);
+}
+function StartMirrorRec() {
+  RecordEnabled = true;
+  MirrorEnabled = true;
+
+  chunksPerStack = 40;
+  chunkLength = 1500;
+  chunkUploadURI = "mirecchunk/";
+  startURI = "start/";
+
+  navigator.mediaDevices.getDisplayMedia(GUMConstraints)
+    .then(handleSuccess, handleError);
+}
 
 
 function handleError(error) {
@@ -41,25 +87,7 @@ function errorMsg(msg, error) {
     console.error(error);
   }
 }
-
-
-const startButton = document.getElementById('startButton');
-startButton.addEventListener('click', () => {
-  RecordEnabled = false;
-  navigator.mediaDevices.getDisplayMedia(GUMConstraints)
-    .then(handleSuccess, handleError);
-});
-const startRecButton = document.getElementById('startRecButton');
-startRecButton.addEventListener('click', () => {
-  RecordEnabled = true;
-  navigator.mediaDevices.getDisplayMedia(GUMConstraints)
-    .then(handleSuccess, handleError);
-});
-
-
 if ((navigator.mediaDevices && 'getDisplayMedia' in navigator.mediaDevices)) {
-  startButton.disabled = false;
-  startRecButton.disabled = false;
   DivSetQlt.hidden = false;
 } else {
   errorMsg('getDisplayMedia is not supported');
@@ -67,8 +95,6 @@ if ((navigator.mediaDevices && 'getDisplayMedia' in navigator.mediaDevices)) {
 
 
 function handleSuccess(stream) {
-  startButton.disabled = true;
-  startRecButton.disabled = true;
   DivSetQlt.hidden = true;
   video.srcObject = stream;
 
@@ -78,28 +104,23 @@ function handleSuccess(stream) {
     errorMsg('The user has ended sharing the screen');
     IsRecording = false;
 
-    startButton.disabled = false;
-    startRecButton.disabled = false;
     DivSetQlt.hidden = false;
 
   });
 
-  if (RecordEnabled) {
-    console.log(stream);
-    GetURL("start/" + filename)
-    // var options = { mimeType: "video/webm; codecs=vp8" };
-    IsRecording = true;
-    mediaRecorder = new MediaRecorder(stream, QualityOptions);
 
-    mediaRecorder.ondataavailable = handleDataAvailable;
-    mediaRecorder.start();
+  console.log(stream);
+  GetURL(startURI + filename)
+  // var options = { mimeType: "video/webm; codecs=vp8" };
+  IsRecording = true;
+  mediaRecorder = new MediaRecorder(stream, QualityOptions);
+
+  mediaRecorder.ondataavailable = handleDataAvailable;
+  mediaRecorder.start();
+
+  RestartMediaRecorder()
 
 
-
-    setTimeout(event => {
-      RestartMediaRecorder()
-    }, 10000);
-  }
 }
 
 
@@ -110,7 +131,7 @@ function RestartMediaRecorder() {
     mediaRecorder.start();
     setTimeout(event => {
       RestartMediaRecorder()
-    }, 20000);
+    }, chunkLength);
   }
 
 }
@@ -142,7 +163,7 @@ function handleDataAvailable(event) {
     console.log(recordedChunks);
     // download();
     uploadRecorded();
-    if (fileindex >= 5 || !IsRecording) {
+    if (fileindex >= chunksPerStack || !IsRecording) {
       FinalizeRecord()
       if (IsRecording) {
         GetURL("start/" + filename)
@@ -213,7 +234,7 @@ function uploadRecorded() {
   var blob = new Blob(recordedChunks, {
     type: "video/webm"
   });
-  uploadBlob(`chunk/` + filename + "-" + pad(fileindex), blob)
+  uploadBlob(chunkUploadURI + filename + "-" + pad(fileindex), blob)
   fileindex += 1;
 
   recordedChunks = []
@@ -225,7 +246,7 @@ async function uploadText(path, txt) {
 
 //http://localhost:49542
 async function uploadBlob(path, blob) {
-  fetch(`/` + path, { method: "POST", body: blob, mode: 'no-cors' })
+  fetch(`/api/` + path, { method: "POST", body: blob, mode: 'no-cors' })
     .then(response => response.text().then(value => console.log(value)))
 }
 
@@ -236,7 +257,7 @@ function pad(num) {
 
 //http://localhost:49542
 async function GetURL(path) {
-  fetch(`/` + path, { method: "GET", mode: 'no-cors' })
+  fetch(`/api/` + path, { method: "GET" })
     .then(response => response.text().then(value => console.log(value)))
 }
 

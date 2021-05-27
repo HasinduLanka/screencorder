@@ -47,10 +47,21 @@ func RecChunkRecieved(path string, chunk []byte) Response {
 }
 
 func MirrorChunkRecieved(path string, chunk []byte) Response {
-	resp := MirrorAndRecChunkRecieved(path, chunk)
-	go DeleteFiles(wsroot + path + ".webm")
-	go DeleteFiles(wsroot + path + ".m.webm")
-	return resp
+
+	go func() {
+		WriteFile(wsroot+path+".webm", chunk)
+		ExcecCmd("ffmpeg -i " + path + ".webm -cpu-used -8 -deadline realtime -c copy " + path + ".m.webm")
+
+		var err error
+		ViewerChunk, err = LoadFile(wsroot + path + ".m.webm")
+		PrintError(err)
+		ViewerChunkPath = path
+
+		DeleteFiles(wsroot + path + ".webm")
+		DeleteFiles(wsroot + path + ".m.webm")
+	}()
+
+	return BodyResponse([]byte("Host recieved " + path))
 }
 
 func FinalRecieved(path string, body []byte) Response {

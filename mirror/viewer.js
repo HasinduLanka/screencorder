@@ -37,7 +37,7 @@ async function InitializeViewer() {
             if (!IsPlaying) {
                 ControlsHidden(false);
             }
-        }, 500);
+        }, 3000);
 
 
         await NextBlob();
@@ -51,7 +51,7 @@ async function InitializeViewer() {
             if (!IsPlaying) {
                 ControlsHidden(false);
             }
-        }, 500);
+        }, 3000);
 
         await NextBlob();
     });

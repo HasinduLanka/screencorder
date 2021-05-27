@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -11,6 +12,9 @@ import (
 )
 
 var wsroot string = "workspace/"
+
+var SpeakerInputName string = ""
+var AudioEnabled bool = false
 
 var API_POSTs map[string]API_POST_Recieved = map[string]API_POST_Recieved{
 	"api/recchunk":    RecChunkRecieved,
@@ -140,8 +144,14 @@ func main() {
 	MirrorMux.HandleFunc("/", ServeMirrorAsRoot)
 	FullMux.HandleFunc("/", ServeFull)
 
+	myip := GetOutboundIP()
+
 	println("Starting Screencorder http://localhost:49542 ")
-	go ExcecProgram("xdg-open", "http://localhost:49542")
+	println("My local IP address is " + myip)
+	println("Connect to the same LAN and visit    http://" + myip + ":49542   for host interface,   http://" + myip + ":49543   for mirror")
+	go func() {
+		ExcecProgram("xdg-open", "http://localhost:49542")
+	}()
 
 	go func() {
 		if err := http.ListenAndServe(":49543", MirrorMux); err != nil {
@@ -149,12 +159,23 @@ func main() {
 		}
 	}()
 
-	if err := http.ListenAndServe("localhost:49542", FullMux); err != nil {
+	if err := http.ListenAndServe(":49542", FullMux); err != nil {
 		log.Fatal(err)
 	}
 }
 
-var SpeakerInputName string = ""
+// Get preferred outbound ip of this machine
+func GetOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP.String()
+}
 
 func DetectSoundInput() {
 
@@ -167,6 +188,7 @@ func DetectSoundInput() {
 
 	if len(matches) <= 0 {
 		println("No sound device found")
+		AudioEnabled = false
 		return
 	}
 
@@ -188,7 +210,7 @@ func DetectSoundInput() {
 		ch := PromptOptions("Multiple sound devices detected. Which one to use?", SoundInputs)
 		SpeakerInputName = SoundInputs[ch]
 	}
-
+	AudioEnabled = true
 	println("Selected sound device " + SpeakerInputName)
 
 }

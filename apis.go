@@ -27,13 +27,16 @@ var ViewerChunk []byte
 var ViewerChunkPath string
 
 func MirrorAndRecChunkRecieved(path string, chunk []byte) Response {
-	WriteFile(wsroot+path+".webm", chunk)
-	ExcecCmd("ffmpeg -i " + path + ".webm -vcodec libvpx -cpu-used -8 -deadline realtime -c copy " + path + ".m.webm")
 
-	var err error
-	ViewerChunk, err = LoadFile(wsroot + path + ".m.webm")
-	PrintError(err)
-	ViewerChunkPath = path
+	go func() {
+		WriteFile(wsroot+path+".webm", chunk)
+		ExcecCmd("ffmpeg -i " + path + ".webm -cpu-used -8 -deadline realtime -c copy " + path + ".m.webm")
+
+		var err error
+		ViewerChunk, err = LoadFile(wsroot + path + ".m.webm")
+		PrintError(err)
+		ViewerChunkPath = path
+	}()
 
 	return BodyResponse([]byte("Host recieved " + path))
 }
@@ -51,11 +54,13 @@ func MirrorChunkRecieved(path string, chunk []byte) Response {
 }
 
 func FinalRecieved(path string, body []byte) Response {
-	// End Audio recording
-	EndTask, found := AudioTasks[path]
-	if found {
-		EndTask <- false
-		delete(AudioTasks, path)
+	if AudioEnabled {
+		// End Audio recording
+		EndTask, found := AudioTasks[path]
+		if found {
+			EndTask <- false
+			delete(AudioTasks, path)
+		}
 	}
 
 	FinalizingDone[path+".webm"] = false
@@ -63,18 +68,27 @@ func FinalRecieved(path string, body []byte) Response {
 
 	WriteFile(wsroot+path+".fflist", body)
 
-	HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+"-video.webm")
-	MuxOut, MuxErr := ExcecCmd("ffmpeg -i " + path + "-video.webm -i " + path + ".mp3 -map 0:v -map 1:a -c:v copy -shortest " + path + ".webm")
+	if AudioEnabled {
+		HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+"-video.webm")
+		MuxOut, MuxErr := ExcecCmd("ffmpeg -i " + path + "-video.webm -i " + path + ".mp3 -map 0:v -map 1:a -c:v copy -shortest " + path + ".webm")
 
-	println(HiOut)
-	PrintError(HiErr)
+		println(HiOut)
+		PrintError(HiErr)
 
-	println(MuxOut)
-	PrintError(MuxErr)
+		println(MuxOut)
+		PrintError(MuxErr)
 
-	ExcecCmd("rm -f ./" + path + "-*.webm")
-	ExcecCmd("rm -f ./" + path + ".fflist")
-	ExcecCmd("rm -f ./" + path + ".mp3")
+		go DeleteFiles(wsroot + path + ".mp3")
+
+	} else {
+		HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+".webm")
+
+		println(HiOut)
+		PrintError(HiErr)
+	}
+
+	go ExcecCmd("rm -f ./" + path + "-*.webm")
+	go DeleteFiles(wsroot + path + ".fflist")
 
 	delete(FinalizingDone, path+".webm")
 	println("Finalized " + path)
@@ -136,10 +150,11 @@ func Handshake(path string) Response {
 func StartRec(path string) Response {
 	// ExcecProgram("echo", "start recording")
 	EndTask := make(chan bool)
-	if len(SpeakerInputName) == 0 {
+	if !AudioEnabled || (len(SpeakerInputName) == 0) {
+		AudioEnabled = false
 		return BodyResponse([]byte("No Audio"))
 	}
-	go ExcecCmdTask("parec -d "+SpeakerInputName+".monitor | lame -r -V0 - "+path+".mp3", EndTask)
+	ExcecCmdTask("parec -d "+SpeakerInputName+".monitor | lame -r -V0 - "+path+".mp3", EndTask)
 	AudioTasks[path] = EndTask
 	return BodyResponse([]byte("Started with audio"))
 }

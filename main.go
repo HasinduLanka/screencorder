@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,6 +16,7 @@ var wsroot string = "workspace/"
 
 var SpeakerInputName string = ""
 var AudioEnabled bool = false
+var SSLEnabled bool = false
 
 var API_POSTs map[string]API_POST_Recieved = map[string]API_POST_Recieved{
 	"api/recchunk":    RecChunkRecieved,
@@ -135,6 +137,7 @@ func main() {
 	DetectSoundInput()
 
 	MakeDir(wsroot)
+	CheckSSL()
 
 	MirrorMux := http.NewServeMux()
 	FullMux := http.NewServeMux()
@@ -146,21 +149,40 @@ func main() {
 
 	myip := GetOutboundIP()
 
-	println("Starting Screencorder http://localhost:49542 ")
+	if SSLEnabled {
+		println("Starting Screencorder http://localhost:49542 ")
+	} else {
+		println("Starting Screencorder https://localhost:49542 ")
+	}
+
 	println("My local IP address is " + myip)
-	println("Connect to the same LAN and visit    http://" + myip + ":49542   for host interface,   http://" + myip + ":49543   for mirror")
+
+	if SSLEnabled {
+		println("Connect to the same LAN and visit \n https://" + myip + ":49542   for host interface, \n  http://" + myip + ":49543   for mirror")
+	} else {
+		println("Connect to the same LAN and visit \n http://" + myip + ":49542   for host interface, \n  http://" + myip + ":49543   for mirror")
+	}
+
 	go func() {
-		ExcecProgram("xdg-open", "http://localhost:49542")
+		ExcecProgram("xdg-open", "https://localhost:49542")
 	}()
 
 	go func() {
+
 		if err := http.ListenAndServe(":49543", MirrorMux); err != nil {
 			log.Fatal(err)
 		}
+
 	}()
 
-	if err := http.ListenAndServe(":49542", FullMux); err != nil {
-		log.Fatal(err)
+	if SSLEnabled {
+		if err := http.ListenAndServeTLS(":49542", wsroot+"server.crt", wsroot+"server.key", FullMux); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		if err := http.ListenAndServe(":49542", FullMux); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -175,6 +197,28 @@ func GetOutboundIP() string {
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	return localAddr.IP.String()
+}
+
+func CheckSSL() bool {
+	SSLEnabled = false
+
+	if _, errc := os.Stat(wsroot + "server.crt"); errc == nil {
+		// server.crt exists
+		if _, errk := os.Stat(wsroot + "server.key"); errk == nil {
+			// server.key exists
+			SSLEnabled = true
+		}
+	}
+
+	if SSLEnabled {
+		println("SSL certicate found. I will be HTTPS now")
+	} else {
+		println("No SSL certicates found. I will be HTTP. If you want to connect from other hosts, try creating a SSL certificate as following")
+		println("go to " + wsroot + " folder \n\t openssl genrsa -out server.key 2048")
+		println("\t openssl ecparam -genkey -name secp384r1 -out server.key")
+		println("\t openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650\n")
+	}
+	return SSLEnabled
 }
 
 func DetectSoundInput() {

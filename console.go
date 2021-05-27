@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var NoConsole bool = false
+var NoConsole bool = true
 
 func ReadLine() string {
 	var s string

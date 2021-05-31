@@ -163,9 +163,11 @@ func main() {
 		println("Connect to the same LAN and visit \n http://" + myip + ":49542   for host interface, \n  http://" + myip + ":49543   for mirror")
 	}
 
-	go func() {
-		ExcecProgram("xdg-open", "https://localhost:49542")
-	}()
+	if SSLEnabled {
+		go ExcecProgram("xdg-open", "https://localhost:49542")
+	} else {
+		go ExcecProgram("xdg-open", "http://localhost:49542")
+	}
 
 	go func() {
 

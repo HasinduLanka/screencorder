@@ -33,6 +33,7 @@ var IsRecording = false;
 GetURL("handshake/" + filename)
 
 const DivSetQlt = document.getElementById('DivSetQlt');
+const DivVdo = document.getElementById('DivVdo');
 
 
 
@@ -89,6 +90,7 @@ function errorMsg(msg, error) {
 }
 if ((navigator.mediaDevices && 'getDisplayMedia' in navigator.mediaDevices)) {
   DivSetQlt.hidden = false;
+  DivVdo.hidden = true;
 } else {
   errorMsg('getDisplayMedia is not supported');
 }
@@ -96,15 +98,17 @@ if ((navigator.mediaDevices && 'getDisplayMedia' in navigator.mediaDevices)) {
 
 function handleSuccess(stream) {
   DivSetQlt.hidden = true;
+  DivVdo.hidden = false;
   video.srcObject = stream;
 
   // demonstrates how to detect that the user has stopped
   // sharing the screen via the browser UI.
   stream.getVideoTracks()[0].addEventListener('ended', () => {
-    errorMsg('The user has ended sharing the screen');
+    errorMsg('Completed');
     IsRecording = false;
 
     DivSetQlt.hidden = false;
+    DivVdo.hidden = true;
 
   });
 
@@ -262,65 +266,84 @@ async function GetURL(path) {
 }
 
 
+function SelectQltyChanged() {
+  var x = document.getElementById("SlctQlty").value;
+  SetQlt(x);
+  console.log("Quality selected : " + x);
+
+}
 
 function SetQlt(q) {
 
+  var TQ = "";
+
   switch (q) {
-    case 0:
+    case "0":
       QualityOptions = {
         mimeType: 'video/webm'
       }
       GUMConstraints = { video: true };
+      TQ = "Full quality and window framerate";
       break;
 
-    case 1:
+    case "1":
       QualityOptions = {
         videoBitsPerSecond: 8000000,
         mimeType: 'video/webm'
       }
       GUMConstraints = { video: { frameRate: { ideal: 60, max: 60 } } };
+      TQ = "8 Mbps @ 60 FPS max";
       break;
 
-    case 2:
+    case "2":
       QualityOptions = {
         videoBitsPerSecond: 5000000,
         mimeType: 'video/webm'
       }
       GUMConstraints = { video: { frameRate: { ideal: 30, max: 30 } } };
+      TQ = "5 Mbps @ 30 FPS max";
       break;
 
-    case 3:
+    case "3":
       QualityOptions = {
         videoBitsPerSecond: 2500000,
         mimeType: 'video/webm'
       }
       GUMConstraints = { video: { frameRate: { ideal: 30, max: 30 } } };
+      TQ = "2.5 Mbps @ 30 FPS max";
       break;
 
-    case 4:
+    case "4":
       QualityOptions = {
         videoBitsPerSecond: 1000000,
         mimeType: 'video/webm'
       }
       GUMConstraints = { video: { frameRate: { ideal: 24, max: 30 } } };
+      TQ = "1 Mbps @ 24 FPS max";
       break;
 
-    case 5:
+    case "5":
       QualityOptions = {
         videoBitsPerSecond: 600000,
         mimeType: 'video/webm'
       }
-      GUMConstraints = { video: { frameRate: { ideal: 16, max: 24 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 22, max: 24 } } };
+      TQ = "600 kbps @ 22 FPS max";
       break;
-    case 100:
+    case "100":
       QualityOptions = {
         mimeType: 'video/webm'
       }
-      GUMConstraints = { video: { frameRate: { ideal: 10, max: 20 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 8, max: 10 } } };
+      TQ = "Full quality @ 8 FPS max";
       break;
     default:
       break;
   }
+
+
+  document.getElementById("LblQlty").innerHTML = TQ;
+
 }
 
 

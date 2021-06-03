@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -137,7 +138,6 @@ func main() {
 	DetectSoundInput()
 
 	MakeDir(wsroot)
-	CheckSSL()
 
 	MirrorMux := http.NewServeMux()
 	FullMux := http.NewServeMux()
@@ -147,7 +147,17 @@ func main() {
 	MirrorMux.HandleFunc("/", ServeMirrorAsRoot)
 	FullMux.HandleFunc("/", ServeFull)
 
-	myip := GetOutboundIP()
+	myip, errIp := GetOutboundIP()
+
+	NetworkEnabled := errIp == nil
+
+	if NetworkEnabled {
+		CheckSSL()
+		println("My local IP address is " + myip)
+
+	} else {
+		SSLEnabled = false
+	}
 
 	if SSLEnabled {
 		println("Starting Screencorder http://localhost:49542 ")
@@ -155,12 +165,10 @@ func main() {
 		println("Starting Screencorder https://localhost:49542 ")
 	}
 
-	println("My local IP address is " + myip)
-
 	if SSLEnabled {
 		println("Connect to the same LAN and visit \n https://" + myip + ":49542   for host interface, \n  http://" + myip + ":49543   for mirror")
 	} else {
-		println("Connect to the same LAN and visit \n http://" + myip + ":49542   for host interface, \n  http://" + myip + ":49543   for mirror")
+		println("Visit \n  http://localhost:49542   for host interface, \n  http://localhost:49543   for mirror")
 	}
 
 	if SSLEnabled {
@@ -189,16 +197,18 @@ func main() {
 }
 
 // Get preferred outbound ip of this machine
-func GetOutboundIP() string {
+func GetOutboundIP() (string, error) {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
-		log.Fatal(err)
+		println("Cannot get my IP address. May be offline")
+		// PrintError(err)
+		return "", errors.New("error")
 	}
 	defer conn.Close()
 
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
-	return localAddr.IP.String()
+	return localAddr.IP.String(), nil
 }
 
 func CheckSSL() bool {

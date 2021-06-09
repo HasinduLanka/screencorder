@@ -1,0 +1,111 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    background-color: #363d4d;
+}
+
+li {
+    display: inline-block;
+    color: #fff;
+    list-style-type: none;
+    padding: 1em;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+    li span {
+        display: block;
+        font-size: 12px;
+    }
+
+select {
+    background-color: #4a5168;
+    color: white;
+    border-width: 0px;
+    padding: 3px;
+    font-weight: 100;
+}
+
+    select > option {
+        padding: 10px;
+    }
+
+input[type=number] {
+    background-color: #4a5168;
+    color: white;
+    border-width: 0px;
+    padding: 3px;
+    font-weight: 100;
+}
+
+table {
+    border-collapse: collapse;
+
+}
+
+td {
+    border: 1px solid #515766;
+    padding: 0px;
+    align-items: center;
+    
+}
+
+.btn {
+    background-color: #242833;
+    border: none;
+    color: white;
+    padding: 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    
+}
+
+    .btn :hover {
+        background-color: #fff;
+    }
+
+    .btn i {
+        color: white;
+    }
+
+
+
+.menu {
+    font-size: 13px;
+}
+
+    .menu span {
+        background-color: transparent;
+        padding: 5px 8px;
+        color: white;
+    }
+
+        .menu span :hover {
+            background-color: #087c6f !important;
+        }
+
+label {
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-size: 13px;
+}
+
+hr {
+    margin: 10px 0px;
+    border-bottom-color: #515766;
+    border-bottom: 1px;
+}

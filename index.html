@@ -19,6 +19,7 @@
   <meta id="theme-color" name="theme-color" content="#000000">
   <link rel="manifest" href="manifest.json">
 
+  <link rel="stylesheet" href="js/main.css">
   <base target="_blank">
 
   <title>Screencorder</title>
@@ -28,50 +29,84 @@
 
 <body>
 
-  <div>
 
-    <div id="DivSetQlt">
-      <button id="startRecButton" style="width: 90%; height: 2rem;" onclick="StartRec()">Start and Record</button>
-      <br>
-      <button id="startMirrorButton" style="width: 90%; height: 2rem;" onclick="StartMirror()">Start Mirror</button>
-      <br>
-      <button id="startMirrorRecButton" style="width: 90%; height: 2rem;" onclick="StartMirrorRec()">Start Mirror and
-        Record</button>
-      <br>
-      <br>
-      <br>
-      <button id="BtnQltOriginal" style="width: 90%; height: 2rem;" onclick="SetQlt(0)"> Set Original Quality </button>
-      <br>
-      <button id="BtnQltOriginal" style="width: 90%; height: 2rem;" onclick="SetQlt(100)"> Optimize for text Quality
-      </button>
-      <br>
-      <button id="BtnQltFullHD" style="width: 90%; height: 2rem;" onclick="SetQlt(1)"> Set Full HD Quality </button>
-      <br>
-      <button id="BtnQltHD" style="width: 90%; height: 2rem;" onclick="SetQlt(2)"> Set HD Quality </button>
-      <br>
-      <button id="BtnQltMD" style="width: 90%; height: 2rem;" onclick="SetQlt(3)"> Set Medium Quality </button>
-      <br>
-      <button id="BtnQltSD" style="width: 90%; height: 2rem;" onclick="SetQlt(4)"> Set Low Quality </button>
-      <br>
-      <button id="BtnQltLL" style="width: 90%; height: 2rem;" onclick="SetQlt(5)"> Set Lowest Quality </button>
-      <br>
-    </div>
-    <br>
-    <br>
+  <div id="DivVdo">
 
-    <video id="gum-local" style="width: 90%" autoplay playsinline muted controls></video>
-    <br>
-    <br />
-
-    <br>
-
-
-    <h1> Simple screen recorder for Linux on Wayland and X11</h1>
-    <div id="errorMsg"></div>
-
+    <video id="gum-local" style="width: 90%" autoplay playsinline controls></video>
   </div>
 
 
+  <div id="DivSetQlt">
+
+    <div>
+
+      <table style="width:100%;height:10em;" cellpadding="0">
+        <tr>
+          <td colspan="3" class="menu" style="height:25px">
+            <span>
+              <h1>Screencorder</h1>
+              <span>Simple screen recorder for Linux on Wayland and X11</span>
+            </span>
+
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px !important;" rowspan="2">
+            <div style="width:100%;height:100%">
+              <label>REC Quality</label>
+              <select style="font-size:12px;width:100%" id="SlctQlty" onchange="SelectQltyChanged()">
+                <option value="0">Original Quality </option>
+                <option value="100">Text Optimized Quality </option>
+                <option value="1"> Full HD Quality </option>
+                <option value="2"> HD Quality </option>
+                <option value="3"> Medium Quality </option>
+                <option value="4"> Low Quality </option>
+                <option value="5"> Lowest Quality </option>
+              </select>
+              <hr />
+              <label id="LblQlty"> Window Bitrate and Framerate </label><br />
+            </div>
+          </td>
+        </tr>
+        <tr>
+
+          <td rowspan="2">
+            <div style="width:100%;height:100%;">
+              <center>
+                <button class="btn"
+                  style="height:5rem;width:5rem;padding-top:1rem; border-radius: 40%; background-color: #e34433; margin: 0.5rem ;"
+                  id="startRecButton" onclick="StartRec()">Record</button>
+
+                <button class="btn"
+                  style="height:5rem;width:5rem;padding-top:1rem; border-radius: 10%; background-color: #086359 ; margin: 0.5rem ;"
+                  id="startRecButton" onclick="StartMirror()">Mirror</button>
+
+                <button class="btn"
+                  style="height:5rem;width:10rem; border-radius:20% ;  background-color: #918810; margin: 0.5rem ;"
+                  id="startRecButton" onclick="StartMirrorRec()">Record and Mirror</button>
+              </center>
+            </div>
+          </td>
+        </tr>
+
+      </table>
+
+      <br>
+
+    </div>
+    <br>
+
+
+
+  </div>
+
+  <br>
+  <br />
+
+  <br>
+
+
+  <div id="errorMsg"></div>
 
   <!-- <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script> -->
   <script src="js/adapter-latest.js"></script>

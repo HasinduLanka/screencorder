@@ -107,7 +107,7 @@ func ServeMirrorAsRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	println("                                      ")
+	println("                   .                  ")
 	println("--------------------------------------")
 	println("             Screencorder             ")
 	println("--------------------------------------")
@@ -119,7 +119,7 @@ func main() {
 	println("       Github.com/HasinduLanka        ")
 	println("       Github.com/Bitblazers-lk       ")
 	println("--------------------------------------")
-	println("                                      ")
+	println("                   .                  ")
 
 	CheckError(InitExec())
 

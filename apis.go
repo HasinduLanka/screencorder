@@ -134,7 +134,7 @@ func EndRecieved(path string, body []byte) Response {
 		}
 	}
 
-	HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".end.fflist", "-c", "copy", path+".rec.webm")
+	HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".end.fflist", "-c", "copy", path+".rec.mkv")
 
 	println(HiOut)
 	PrintError(HiErr)

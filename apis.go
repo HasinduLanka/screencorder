@@ -76,8 +76,8 @@ func FinalRecieved(path string, body []byte) Response {
 	WriteFile(wsroot+path+".fflist", body)
 
 	if AudioEnabled {
-		HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+"-video.webm")
-		MuxOut, MuxErr := ExcecCmd("ffmpeg -i " + path + "-video.webm -i " + path + ".mp3 -map 0:v -map 1:a -c:v copy -shortest " + path + ".webm")
+		HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+"-video.mkv")
+		MuxOut, MuxErr := ExcecCmd("ffmpeg -i " + path + "-video.mkv -i " + path + ".mp3 -map 0:v -map 1:a -c:v copy -shortest " + path + ".mkv")
 
 		println(HiOut)
 		PrintError(HiErr)
@@ -88,11 +88,13 @@ func FinalRecieved(path string, body []byte) Response {
 		go DeleteFiles(wsroot + path + ".mp3")
 
 	} else {
-		HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+".webm")
+		HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+".mkv")
 
 		println(HiOut)
 		PrintError(HiErr)
 	}
+
+	go DeleteFiles(wsroot + path + "-video.mkv")
 
 	go ExcecCmd("rm -f ./" + path + "-*.webm")
 	go DeleteFiles(wsroot + path + ".fflist")

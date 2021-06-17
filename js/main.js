@@ -207,7 +207,7 @@ function EndRecord() {
   var fflist = "";
 
   finalFiles.forEach(f => {
-    fflist = fflist + "file '" + f + ".webm'\n";
+    fflist = fflist + "file '" + f + ".mkv'\n";
   });
 
   uploadText("end/" + filename, fflist)

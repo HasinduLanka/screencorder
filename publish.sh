@@ -12,6 +12,7 @@ mkdir -p ../publish/www
 
 cp -r js ../publish/www/
 cp -r mirror ../publish/www/
+cp -r imgs ../publish/www/
 cp .gitignore ../publish/www/
 cp update ../publish/www/
 cp 404.html ../publish/www/

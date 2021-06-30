@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -121,6 +122,15 @@ func main() {
 	println("--------------------------------------")
 	println("                   .                  ")
 
+	HomeDir, HomeDirErr := os.UserHomeDir()
+	if HomeDirErr == nil {
+		HomeVideo := path.Join(HomeDir, "Videos/screencorder") + "/"
+		if os.MkdirAll(HomeVideo, os.ModePerm) == nil {
+			wsroot = HomeVideo
+		}
+	}
+	MakeDir(wsroot)
+
 	CheckError(InitExec())
 
 	HiOut, HiErr := ExcecCmd("echo 'System calls working'")
@@ -137,8 +147,6 @@ func main() {
 
 	AudioEnabled = false
 	DetectSoundInput()
-
-	MakeDir(wsroot)
 
 	MirrorMux := http.NewServeMux()
 	FullMux := http.NewServeMux()

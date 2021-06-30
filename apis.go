@@ -35,16 +35,24 @@ func MirrorAndRecChunkRecieved(path string, chunk []byte) Response {
 
 func MirrorAndRecChunkRecievedHandler(path string, chunk []byte) {
 	WriteFile(wsroot+path+".webm", chunk)
-	ExcecCmd("ffmpeg -i " + path + ".webm -cpu-used -8 -deadline realtime -c copy " + path + ".m.webm")
+	ExcecCmd("ffmpeg -i " + path + ".webm -cpu-used -8 -deadline realtime -c copy " + path + ".mkv")
 
 	var err error
-	ViewerChunk, err = LoadFile(wsroot + path + ".m.webm")
+	ViewerChunk, err = LoadFile(wsroot + path + ".mkv")
 	PrintError(err)
 	ViewerChunkPath = path
+
+	go DeleteFiles(wsroot + path + ".webm")
+
 }
 
 func RecChunkRecieved(path string, chunk []byte) Response {
-	go WriteFile(wsroot+path+".webm", chunk)
+	go func() {
+		WriteFile(wsroot+path+".webm", chunk)
+		ExcecCmd("ffmpeg -i " + path + ".webm -cpu-used -8 -deadline realtime -c copy " + path + ".mkv")
+		go DeleteFiles(wsroot + path + ".webm")
+
+	}()
 	return BodyResponse([]byte("Host recieved " + path))
 }
 
@@ -53,8 +61,8 @@ func MirrorChunkRecieved(path string, chunk []byte) Response {
 	go func() {
 		MirrorAndRecChunkRecievedHandler(path, chunk)
 
-		DeleteFiles(wsroot + path + ".webm")
-		DeleteFiles(wsroot + path + ".m.webm")
+		go DeleteFiles(wsroot + path + ".webm")
+		go DeleteFiles(wsroot + path + ".m.webm")
 	}()
 
 	return BodyResponse([]byte("Host recieved " + path))
@@ -75,9 +83,28 @@ func FinalRecieved(path string, body []byte) Response {
 
 	WriteFile(wsroot+path+".fflist", body)
 
+	Sbody := string(body)
+	re := regexp.MustCompile("file '(.*)'")
+	matches := re.FindAllStringSubmatch(Sbody, -1)
+
+	for _, match := range matches {
+		if len(match) == 2 {
+			fl := match[1]
+			println("Final : Checking chunk " + fl)
+			chnk := wsroot + fl
+
+			for !FileExists(chnk) {
+				time.Sleep(500 * time.Millisecond)
+			}
+
+		} else {
+			println("Parse error " + wsroot + strings.Join(match, ", "))
+		}
+	}
+
 	if AudioEnabled {
 		HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+"-video.mkv")
-		MuxOut, MuxErr := ExcecCmd("ffmpeg -i " + path + "-video.mkv -i " + path + ".mp3 -map 0:v -map 1:a -c:v copy -shortest " + path + ".mkv")
+		MuxOut, MuxErr := ExcecCmd("ffmpeg -i " + path + "-video.mkv -i " + path + ".wav -map 0:v -map 1:a -c:v copy -shortest " + path + ".mkv")
 
 		println(HiOut)
 		PrintError(HiErr)
@@ -85,7 +112,7 @@ func FinalRecieved(path string, body []byte) Response {
 		println(MuxOut)
 		PrintError(MuxErr)
 
-		go DeleteFiles(wsroot + path + ".mp3")
+		go DeleteFiles(wsroot + path + ".wav")
 
 	} else {
 		HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+".mkv")
@@ -96,7 +123,7 @@ func FinalRecieved(path string, body []byte) Response {
 
 	go DeleteFiles(wsroot + path + "-video.mkv")
 
-	go ExcecCmd("rm -f ./" + path + "-*.webm")
+	go ExcecCmd("rm -f ./" + path + "-*.mkv")
 	go DeleteFiles(wsroot + path + ".fflist")
 
 	delete(FinalizingDone, path+".webm")
@@ -120,7 +147,12 @@ func EndRecieved(path string, body []byte) Response {
 		if len(match) == 2 {
 			fl := match[1]
 			println("Checking " + fl)
-			FinalFiles[i] = wsroot + fl
+			FinalFile := wsroot + fl
+			FinalFiles[i] = FinalFile
+
+			for !FileExists(FinalFile) {
+				time.Sleep(1 * time.Second)
+			}
 
 			_, contains := FinalizingDone[fl]
 			for contains {
@@ -141,10 +173,10 @@ func EndRecieved(path string, body []byte) Response {
 
 	for _, match := range FinalFiles {
 		println("Delete file " + match)
-		DeleteFiles(match)
+		go DeleteFiles(match)
 	}
 
-	DeleteFiles(wsroot + path + ".end.fflist")
+	go DeleteFiles(wsroot + path + ".end.fflist")
 	println("Ended " + path)
 
 	return BodyResponse([]byte("End Recieved " + path))
@@ -156,14 +188,23 @@ func Handshake(path string) Response {
 }
 
 func StartRec(path string) Response {
-	// ExcecProgram("echo", "start recording")
-	EndTask := make(chan bool)
+
 	if !AudioEnabled || (len(SpeakerInputName) == 0) {
 		AudioEnabled = false
 		return BodyResponse([]byte("No Audio"))
 	}
-	ExcecCmdTask("parec -d "+SpeakerInputName+".monitor | lame -r -V0 - "+path+".mp3", EndTask)
-	AudioTasks[path] = EndTask
+
+	go func() {
+		// ExcecProgram("echo", "start recording")
+
+		EndTask := make(chan bool)
+
+		ExcecCmdToString("pkill parec")
+		ExcecCmdTask("parec -d "+SpeakerInputName+".monitor --file-format=wav "+path+".wav", EndTask)
+
+		AudioTasks[path] = EndTask
+	}()
+
 	return BodyResponse([]byte("Started with audio"))
 }
 

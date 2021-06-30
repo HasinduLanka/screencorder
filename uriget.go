@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -31,6 +32,17 @@ func WriteFile(filename string, content []byte) {
 	CheckError(err)
 	F.Write(content)
 	F.Close()
+}
+func FileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	if err == nil {
+		return true
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return true
+
 }
 
 func MakeDir(name string) {

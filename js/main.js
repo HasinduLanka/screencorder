@@ -165,7 +165,7 @@ function handleDataAvailable(event) {
   if (event.data.size > 0) {
     recordedChunks.push(event.data);
     console.log(recordedChunks);
-    // download();
+
     uploadRecorded();
     if (fileindex >= chunksPerStack || !IsRecording) {
       FinalizeRecord()
@@ -192,7 +192,7 @@ function FinalizeRecord() {
   var fflist = "";
 
   for (let i = 1; i < fileindex; i++) {
-    fflist = fflist + "file '" + filename + "-" + pad(i) + ".webm'\n";
+    fflist = fflist + "file '" + filename + "-" + pad(i) + ".mkv'\n";
   }
 
   uploadText("final/" + filename, fflist)

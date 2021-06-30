@@ -9,12 +9,14 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
 var wsroot string = "workspace/"
+var rootDir string = ""
 
 var SpeakerInputName string = ""
 var AudioEnabled bool = false
@@ -62,7 +64,8 @@ func ServeFull(w http.ResponseWriter, r *http.Request) {
 
 		// If no API
 		fmt.Println("Serving " + urlpath)
-		http.ServeFile(w, r, urlpath)
+
+		http.ServeFile(w, r, path.Join(rootDir, urlpath))
 
 	case "POST":
 		body, err := ioutil.ReadAll(r.Body)
@@ -130,6 +133,27 @@ func main() {
 		}
 	}
 	MakeDir(wsroot)
+
+	if FileExists("index.html") {
+		cwd, cwderr := filepath.Abs("")
+		if cwderr == nil {
+			rootDir = cwd + "/"
+		} else {
+			rootDir = "/"
+		}
+	} else {
+		ex, err := os.Executable()
+		if err == nil {
+			resolvedPath, resolvedErr := filepath.EvalSymlinks(ex)
+			if resolvedErr == nil {
+				rootDir = filepath.Dir(resolvedPath) + "/"
+			} else {
+				rootDir = ex + "/"
+			}
+		}
+	}
+
+	println("Operating on " + rootDir)
 
 	CheckError(InitExec())
 

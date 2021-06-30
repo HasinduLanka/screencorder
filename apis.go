@@ -69,121 +69,126 @@ func MirrorChunkRecieved(path string, chunk []byte) Response {
 }
 
 func FinalRecieved(path string, body []byte) Response {
-	if AudioEnabled {
-		// End Audio recording
-		EndTask, found := AudioTasks[path]
-		if found {
-			EndTask <- false
-			delete(AudioTasks, path)
-		}
-	}
 
-	FinalizingDone[path+".webm"] = false
-	println("Finalizing " + path)
-
-	WriteFile(wsroot+path+".fflist", body)
-
-	Sbody := string(body)
-	re := regexp.MustCompile("file '(.*)'")
-	matches := re.FindAllStringSubmatch(Sbody, -1)
-
-	for _, match := range matches {
-		if len(match) == 2 {
-			fl := match[1]
-			println("Final : Checking chunk " + fl)
-			chnk := wsroot + fl
-
-			for !FileExists(chnk) {
-				time.Sleep(500 * time.Millisecond)
+	go func() {
+		if AudioEnabled {
+			// End Audio recording
+			EndTask, found := AudioTasks[path]
+			if found {
+				EndTask <- false
+				delete(AudioTasks, path)
 			}
+		}
+
+		FinalizingDone[path+".webm"] = false
+		println("Finalizing " + path)
+
+		WriteFile(wsroot+path+".fflist", body)
+
+		Sbody := string(body)
+		re := regexp.MustCompile("file '(.*)'")
+		matches := re.FindAllStringSubmatch(Sbody, -1)
+
+		for _, match := range matches {
+			if len(match) == 2 {
+				fl := match[1]
+				println("Final : Checking chunk " + fl)
+				chnk := wsroot + fl
+
+				for !FileExists(chnk) {
+					time.Sleep(500 * time.Millisecond)
+				}
+
+			} else {
+				println("Parse error " + wsroot + strings.Join(match, ", "))
+			}
+		}
+
+		if AudioEnabled {
+			HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+"-video.mkv")
+			MuxOut, MuxErr := ExcecCmd("ffmpeg -i " + path + "-video.mkv -i " + path + ".wav -map 0:v -map 1:a -c:v copy -shortest " + path + ".mkv")
+
+			println(HiOut)
+			PrintError(HiErr)
+
+			println(MuxOut)
+			PrintError(MuxErr)
+
+			go DeleteFiles(wsroot + path + ".wav")
 
 		} else {
-			println("Parse error " + wsroot + strings.Join(match, ", "))
+			HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+".mkv")
+
+			println(HiOut)
+			PrintError(HiErr)
 		}
-	}
 
-	if AudioEnabled {
-		HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+"-video.mkv")
-		MuxOut, MuxErr := ExcecCmd("ffmpeg -i " + path + "-video.mkv -i " + path + ".wav -map 0:v -map 1:a -c:v copy -shortest " + path + ".mkv")
+		go DeleteFiles(wsroot + path + "-video.mkv")
 
-		println(HiOut)
-		PrintError(HiErr)
+		go ExcecCmd("rm -f ./" + path + "-*.mkv")
+		go DeleteFiles(wsroot + path + ".fflist")
 
-		println(MuxOut)
-		PrintError(MuxErr)
-
-		go DeleteFiles(wsroot + path + ".wav")
-
-	} else {
-		HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+".mkv")
-
-		println(HiOut)
-		PrintError(HiErr)
-	}
-
-	go DeleteFiles(wsroot + path + "-video.mkv")
-
-	go ExcecCmd("rm -f ./" + path + "-*.mkv")
-	go DeleteFiles(wsroot + path + ".fflist")
-
-	delete(FinalizingDone, path+".webm")
-	println("Finalized " + path)
+		delete(FinalizingDone, path+".webm")
+		println("Finalized " + path)
+	}()
 
 	return BodyResponse([]byte("Final Recieved " + path))
 }
 
 func EndRecieved(path string, body []byte) Response {
-	println("Ending " + path)
+	go func() {
+		println("Ending " + path)
 
-	WriteFile(wsroot+path+".end.fflist", body)
+		WriteFile(wsroot+path+".end.fflist", body)
 
-	Sbody := string(body)
-	re := regexp.MustCompile("file '(.*)'")
-	matches := re.FindAllStringSubmatch(Sbody, -1)
+		Sbody := string(body)
+		re := regexp.MustCompile("file '(.*)'")
+		matches := re.FindAllStringSubmatch(Sbody, -1)
 
-	FinalFiles := make([]string, len(matches))
+		FinalFiles := make([]string, len(matches))
 
-	for i, match := range matches {
-		if len(match) == 2 {
-			fl := match[1]
-			println("Checking " + fl)
-			FinalFile := wsroot + fl
-			FinalFiles[i] = FinalFile
+		for i, match := range matches {
+			if len(match) == 2 {
+				fl := match[1]
+				println("Checking " + fl)
+				FinalFile := wsroot + fl
+				FinalFiles[i] = FinalFile
 
-			for !FileExists(FinalFile) {
-				time.Sleep(1 * time.Second)
+				for !FileExists(FinalFile) {
+					time.Sleep(1 * time.Second)
+				}
+
+				_, contains := FinalizingDone[fl]
+				for contains {
+					println("Waiting for " + fl)
+					time.Sleep(1 * time.Second)
+					_, contains = FinalizingDone[fl]
+				}
+
+			} else {
+				println("Parse error " + wsroot + strings.Join(match, ", "))
 			}
-
-			_, contains := FinalizingDone[fl]
-			for contains {
-				println("Waiting for " + fl)
-				time.Sleep(1 * time.Second)
-				_, contains = FinalizingDone[fl]
-			}
-
-		} else {
-			println("Parse error " + wsroot + strings.Join(match, ", "))
 		}
-	}
 
-	HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".end.fflist", "-c", "copy", path+".rec.mkv")
+		HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".end.fflist", "-c", "copy", path+".rec.mkv")
 
-	println(HiOut)
-	PrintError(HiErr)
+		println(HiOut)
+		PrintError(HiErr)
 
-	for _, match := range FinalFiles {
-		println("Delete file " + match)
-		go DeleteFiles(match)
-	}
+		for _, match := range FinalFiles {
+			println("Delete file " + match)
+			go DeleteFiles(match)
+		}
 
-	go DeleteFiles(wsroot + path + ".end.fflist")
-	println("Ended " + path)
+		go DeleteFiles(wsroot + path + ".end.fflist")
+		println("Ended " + path)
+	}()
 
 	return BodyResponse([]byte("End Recieved " + path))
 }
 
 func Handshake(path string) Response {
-	ExcecProgram("echo", "Host Ready")
+	go ExcecProgram("echo", "Host Ready")
 	return BodyResponse([]byte("Host Ready"))
 }
 

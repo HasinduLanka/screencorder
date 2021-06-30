@@ -83,8 +83,10 @@ On **wayland** you will only be able to share windows. Not desktops.
 
 ![UI](imgs/finish.jpg)
 
-## 5. See your recordings from `workspace` folder 
-inside current folder. You can safely stop `screencorder` now
+## 5. See your recordings from `$Home/Videos/screencorder` folder 
+Open your user home folder -> Videos -> screencorder
+Recorded file type is `MKV`
+You can safely stop `screencorder` now
 
 
 ![visitors](https://visitor-badge.glitch.me/badge?page_id=hasindulanka.screencorder)

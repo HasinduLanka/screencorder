@@ -135,6 +135,7 @@ func main() {
 	// time.Sleep(time.Second * 1)
 	// EndTask <- false
 
+	AudioEnabled = false
 	DetectSoundInput()
 
 	MakeDir(wsroot)
@@ -172,9 +173,9 @@ func main() {
 	}
 
 	if SSLEnabled {
-		go ExcecProgram("xdg-open", "https://localhost:49542")
+		go OpenProgram("xdg-open", "https://localhost:49542")
 	} else {
-		go ExcecProgram("xdg-open", "http://localhost:49542")
+		go OpenProgram("xdg-open", "http://localhost:49542")
 	}
 
 	go func() {
@@ -240,7 +241,7 @@ func DetectSoundInput() {
 	// println(DSo)
 
 	re, _ := regexp.Compile("name: <(.*)>")
-	matches := re.FindAllStringSubmatch(DSo, -1)
+	matches := re.FindAllStringSubmatch(DSo, 32)
 
 	if len(matches) <= 0 {
 		println("No sound device found")
@@ -261,6 +262,7 @@ func DetectSoundInput() {
 	}
 
 	if len(SoundInputs) == 0 {
+		AudioEnabled = false
 		return
 	} else if len(SoundInputs) > 1 {
 		ch := PromptOptions("Multiple sound devices detected. Which one to use?", SoundInputs)

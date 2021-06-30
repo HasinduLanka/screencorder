@@ -38,6 +38,7 @@ func MakeDir(name string) {
 }
 
 func DeleteFiles(name string) {
+	println("Deleting file " + name)
 	os.RemoveAll(name)
 }
 

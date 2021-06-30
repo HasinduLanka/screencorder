@@ -50,6 +50,23 @@ func ExcecProgram(program string, arg ...string) (string, error) {
 	return "Done Excecute " + program + " " + args, err
 }
 
+func OpenProgram(program string, arg ...string) (string, error) {
+	args := strings.Join(arg, " ")
+	println("Excecute " + program + " " + args)
+
+	cmd := exec.Command(program, arg...)
+	cmd.Dir = wsroot
+
+	err := cmd.Run()
+	// run command
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+
+	// out := string(ret)
+	return "Done Opening " + program + " " + args, err
+}
+
 func ExcecCmdTask(command string, endTask chan bool) (string, error) {
 	return ExcecTask("bash", endTask, "-c", command)
 }

@@ -144,7 +144,6 @@ func EndRecieved(path string, body []byte) Response {
 		DeleteFiles(match)
 	}
 
-	// ExcecCmd("rm -f ./" + path + "-*.webm")
 	DeleteFiles(wsroot + path + ".end.fflist")
 	println("Ended " + path)
 

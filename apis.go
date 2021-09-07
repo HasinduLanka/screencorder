@@ -35,7 +35,9 @@ func MirrorAndRecChunkRecieved(path string, chunk []byte) Response {
 
 func MirrorAndRecChunkRecievedHandler(path string, chunk []byte) {
 	WriteFile(wsroot+path+".webm", chunk)
-	ExcecCmd("ffmpeg -i " + path + ".webm -cpu-used -8 -deadline realtime -c copy " + path + ".mkv")
+	POut, PErr := ExcecCmdToString("ffmpeg -i " + path + ".webm -cpu-used -8 -deadline realtime -c copy " + path + ".mkv")
+	PrintError(PErr)
+	println("\n\n" + POut + "\n\n")
 
 	var err error
 	ViewerChunk, err = LoadFile(wsroot + path + ".mkv")
@@ -49,7 +51,11 @@ func MirrorAndRecChunkRecievedHandler(path string, chunk []byte) {
 func RecChunkRecieved(path string, chunk []byte) Response {
 	go func() {
 		WriteFile(wsroot+path+".webm", chunk)
-		ExcecCmd("ffmpeg -i " + path + ".webm -cpu-used -8 -deadline realtime -c copy " + path + ".mkv")
+
+		POut, PErr := ExcecCmdToString("ffmpeg -i " + path + ".webm -cpu-used -8 -deadline realtime -c copy " + path + ".mkv")
+		PrintError(PErr)
+		println("\n\n" + POut + "\n\n")
+
 		go DeleteFiles(wsroot + path + ".webm")
 
 	}()
@@ -89,6 +95,8 @@ func FinalRecieved(path string, body []byte) Response {
 		re := regexp.MustCompile("file '(.*)'")
 		matches := re.FindAllStringSubmatch(Sbody, -1)
 
+		ChunkList := make([]string, 0, len(matches))
+
 		for _, match := range matches {
 			if len(match) == 2 {
 				fl := match[1]
@@ -99,33 +107,41 @@ func FinalRecieved(path string, body []byte) Response {
 					time.Sleep(500 * time.Millisecond)
 				}
 
+				ChunkList = append(ChunkList, chnk)
+
 			} else {
 				println("Parse error " + wsroot + strings.Join(match, ", "))
 			}
 		}
 
 		if AudioEnabled {
-			HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+"-video.mkv")
-			MuxOut, MuxErr := ExcecCmd("ffmpeg -i " + path + "-video.mkv -i " + path + ".wav -map 0:v -map 1:a -c:v copy -shortest " + path + ".mkv")
+			HiOut, HiErr := ExcecProgramToString("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+"-video.mkv")
+			MuxOut, MuxErr := ExcecCmdToString("ffmpeg -i " + path + "-video.mkv -i " + path + ".wav -map 0:v -map 1:a -c:v copy -shortest " + path + ".mkv")
 
-			println(HiOut)
+			println("\n\n" + HiOut + "\n\n")
 			PrintError(HiErr)
 
-			println(MuxOut)
+			println("\n\n" + MuxOut + "\n\n")
 			PrintError(MuxErr)
 
 			go DeleteFiles(wsroot + path + ".wav")
 
 		} else {
-			HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+".mkv")
+			HiOut, HiErr := ExcecProgramToString("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+".mkv")
 
-			println(HiOut)
+			println("\n\n" + HiOut + "\n\n")
 			PrintError(HiErr)
 		}
 
 		go DeleteFiles(wsroot + path + "-video.mkv")
 
-		go ExcecCmd("rm -f ./" + path + "-*.mkv")
+		// go ExcecCmd("rm -f ./" + path + "-*.mkv")
+		go func() {
+			for _, chnk := range ChunkList {
+				go DeleteFiles(chnk)
+			}
+		}()
+
 		go DeleteFiles(wsroot + path + ".fflist")
 
 		delete(FinalizingDone, path+".webm")
@@ -137,50 +153,6 @@ func FinalRecieved(path string, body []byte) Response {
 
 func EndRecieved(path string, body []byte) Response {
 	go func() {
-		println("Ending " + path)
-
-		WriteFile(wsroot+path+".end.fflist", body)
-
-		Sbody := string(body)
-		re := regexp.MustCompile("file '(.*)'")
-		matches := re.FindAllStringSubmatch(Sbody, -1)
-
-		FinalFiles := make([]string, len(matches))
-
-		for i, match := range matches {
-			if len(match) == 2 {
-				fl := match[1]
-				println("Checking " + fl)
-				FinalFile := wsroot + fl
-				FinalFiles[i] = FinalFile
-
-				for !FileExists(FinalFile) {
-					time.Sleep(1 * time.Second)
-				}
-
-				_, contains := FinalizingDone[fl]
-				for contains {
-					println("Waiting for " + fl)
-					time.Sleep(1 * time.Second)
-					_, contains = FinalizingDone[fl]
-				}
-
-			} else {
-				println("Parse error " + wsroot + strings.Join(match, ", "))
-			}
-		}
-
-		HiOut, HiErr := ExcecProgram("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".end.fflist", "-c", "copy", path+".rec.mkv")
-
-		println(HiOut)
-		PrintError(HiErr)
-
-		for _, match := range FinalFiles {
-			println("Delete file " + match)
-			go DeleteFiles(match)
-		}
-
-		go DeleteFiles(wsroot + path + ".end.fflist")
 		println("Ended " + path)
 	}()
 

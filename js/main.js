@@ -16,7 +16,7 @@ if (adapter.browserDetails.browser == 'firefox') {
 const video = document.querySelector('video');
 var mediaRecorder;
 var QualityOptions = { mimeType: 'video/webm' }
-var GUMConstraints = { video: true };
+var GUMConstraints = { video: true , audio : true  };
 
 var MirrorEnabled = false;
 var RecordEnabled = false;
@@ -28,6 +28,7 @@ var startURI = "start/";
 var filename = "Record-" + Date.now().toString();
 var fileindex = 1;
 var finalFiles = [];
+var FinalFile = "";
 var IsRecording = false;
 
 GetURL("handshake/" + filename)
@@ -176,7 +177,7 @@ function handleDataAvailable(event) {
   } else {
     // ...
   }
-
+  
   if (!IsRecording) {
     EndRecord()
   }
@@ -187,18 +188,24 @@ function handleDataAvailable(event) {
 
 function FinalizeRecord() {
 
-  finalFiles.push(filename);
+  // finalFiles.push(filename);
 
   var fflist = "";
+
+  if (FinalFile.length != 0) {
+    fflist =  "file '" + FinalFile + ".mkv'\n";
+  }
+  
+  FinalFile = filename;
 
   for (let i = 1; i < fileindex; i++) {
     fflist = fflist + "file '" + filename + "-" + pad(i) + ".mkv'\n";
   }
 
-  uploadText("final/" + filename, fflist)
+  uploadText("final/" + filename, fflist);
 
-  filename = "Record-" + Date.now().toString()
-  fileindex = 1
+  filename = "Record-" + Date.now().toString();
+  fileindex = 1;
 }
 
 
@@ -206,15 +213,16 @@ function EndRecord() {
 
   var fflist = "";
 
-  finalFiles.forEach(f => {
-    fflist = fflist + "file '" + f + ".mkv'\n";
-  });
+  // finalFiles.forEach(f => {
+  //   fflist = fflist + "file '" + f + ".mkv'\n";
+  // });
 
-  uploadText("end/" + filename, fflist)
+  uploadText("end/" + filename, fflist);
 
-  filename = "Record-" + Date.now().toString()
-  fileindex = 1
-  finalFiles = [];
+  filename = "Record-" + Date.now().toString();
+  fileindex = 1;
+  FinalFile = "";
+  // finalFiles = [];
 }
 
 function download() {
@@ -230,7 +238,7 @@ function download() {
   fileindex += 1;
   a.click();
   window.URL.revokeObjectURL(url);
-  recordedChunks = []
+  recordedChunks = [];
 }
 
 
@@ -251,7 +259,7 @@ async function uploadText(path, txt) {
 //http://localhost:49542
 async function uploadBlob(path, blob) {
   fetch(`/api/` + path, { method: "POST", body: blob, mode: 'no-cors' })
-    .then(response => response.text().then(value => console.log(value)))
+    .then(response => response.text().then(value => { console.log("API POST : " + path); console.log(value);}))
 }
 
 function pad(num) {
@@ -282,59 +290,65 @@ function SetQlt(q) {
       QualityOptions = {
         mimeType: 'video/webm'
       }
-      GUMConstraints = { video: true };
+      GUMConstraints = { video: true, audio: true };
       TQ = "Full quality and window framerate";
       break;
 
     case "1":
       QualityOptions = {
         videoBitsPerSecond: 8000000,
+        audioBitsPerSecond: 128000,
         mimeType: 'video/webm'
       }
-      GUMConstraints = { video: { frameRate: { ideal: 60, max: 60 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 60, max: 60 } }, audio: true  };
       TQ = "8 Mbps @ 60 FPS max";
       break;
 
     case "2":
       QualityOptions = {
         videoBitsPerSecond: 5000000,
+        audioBitsPerSecond: 128000,
         mimeType: 'video/webm'
       }
-      GUMConstraints = { video: { frameRate: { ideal: 30, max: 30 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 30, max: 30 } } , audio: true };
       TQ = "5 Mbps @ 30 FPS max";
       break;
 
     case "3":
       QualityOptions = {
         videoBitsPerSecond: 2500000,
+        audioBitsPerSecond: 128000,
         mimeType: 'video/webm'
       }
-      GUMConstraints = { video: { frameRate: { ideal: 30, max: 30 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 30, max: 30 } }, audio: true  };
       TQ = "2.5 Mbps @ 30 FPS max";
       break;
 
     case "4":
       QualityOptions = {
         videoBitsPerSecond: 1000000,
+        audioBitsPerSecond: 128000,
         mimeType: 'video/webm'
       }
-      GUMConstraints = { video: { frameRate: { ideal: 24, max: 30 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 24, max: 30 } } , audio: true };
       TQ = "1 Mbps @ 24 FPS max";
       break;
 
     case "5":
       QualityOptions = {
         videoBitsPerSecond: 600000,
+        audioBitsPerSecond: 64000,
         mimeType: 'video/webm'
       }
-      GUMConstraints = { video: { frameRate: { ideal: 22, max: 24 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 22, max: 24 } }, audio: true  };
       TQ = "600 kbps @ 22 FPS max";
       break;
     case "100":
       QualityOptions = {
-        mimeType: 'video/webm'
+        mimeType: 'video/webm',
+        audioBitsPerSecond: 128000,
       }
-      GUMConstraints = { video: { frameRate: { ideal: 8, max: 10 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 8, max: 10 } }, audio: true  };
       TQ = "Full quality @ 8 FPS max";
       break;
     default:
@@ -373,24 +387,3 @@ function PlaybackMic() {
     );
   }
 }
-
-// const downloadButton = document.getElementById('downloadButton');
-
-// downloadButton.addEventListener('click', () => {
-
-//   var fflist = "";
-//   var fflistfilename = filename + ".fflist";
-
-//   var cmd = "#!/bin/bash\n";
-//   cmd = cmd + "ffmpeg -f concat -safe 0 -i " + fflistfilename + " -c copy " + filename + ".webm\nrm -f " + filename + "-*.webm\nrm -f " + filename + ".sh\n";
-
-
-//   for (let i = 1; i < fileindex; i++) {
-//     fflist = fflist + "file '" + filename + "-" + pad(i) + ".webm'\n";
-//   }
-
-//   downloadText(fflist, fflistfilename);
-//   // uploadText("final/" + filename, fflist)
-//   downloadText(cmd, filename + ".sh");
-
-// });

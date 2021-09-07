@@ -169,8 +169,10 @@ func main() {
 	// time.Sleep(time.Second * 1)
 	// EndTask <- false
 
-	AudioEnabled = false
-	DetectSoundInput()
+	if AudioEnabled {
+		AudioEnabled = false
+		DetectSoundInput()
+	}
 
 	MirrorMux := http.NewServeMux()
 	FullMux := http.NewServeMux()

@@ -95,41 +95,6 @@ You can safely stop `screencorder` now
 ⭐⭐⭐ Start this repo up there ⭐⭐⭐
 ```
 
-# Mirror screen
-You can Mirror / Record and Mirror your screen content to another device with screencorder. Client devices do not need to install anything.
-
-
-## 1. Run `screencorder`
-Example:  `./screencorder`
-
-A browser will open. If not, open a browser and go to http://localhost:49542/
-
-Select Video quality. Lower values will be faster when sharing over wireless networks.
-
-## 2. Connect devices
-Connect both devices to the same network (same WiFi, Hotspot or LAN)
-
-Find the host device IP address (Host device is the one you are running screencorder) 
-Open a console and type
-```
-ip a
-```
-
-In the output, look for keywords `wlan`, `wlp3s` for WiFi networks
-```
-3: wlp3s0: <BROADCAST,MULTICAST,UP,LOWER_UP> 
-    link/ether 63:3b:26:f0:cb:73 brd ff:ff:ff:ff:ff:ff
-    inet 192.168.8.142/24 brd 192.168.8.255 scope global dynamic 
-```
-Here my local IP address is `192.168.8.142` . Find yours.
-
-On the second device, open a web browser and type **your IP address** in the address bar. Then type `:49543` 
-
-For example my IP address is `192.168.8.142`, therefore it should look like `192.168.8.142:49543`
-![UI](imgs/mirror-ip.jpg)
-
-Press enter. Now this webpage will mirror content from the host device. You can connect several devices to one host.
-
 
 # How this screen recorder works on wayland
 Most screen recorders out there do not work on wayland. Why?

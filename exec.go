@@ -7,14 +7,14 @@ import (
 	"strings"
 )
 
-var Excecutables map[string]string = map[string]string{"ffmpeg": "", "echo": "", "bash": "", "rm": "", "pacmd": "", "parec": "", "lame": "", "xdg-open": ""}
+var Excecutables map[string]string = map[string]string{"ffmpeg": "", "echo": "", "sh": "", "pacmd": "", "parec": "", "lame": ""}
 
 func InitExec() error {
 	for key := range Excecutables {
 		path, err := exec.LookPath(key)
 		if err != nil {
 			println("Some excecutables not found. Please make sure you have installed all the needed dependencies.")
-			println("On Debian/Ubuntu - try running sudo apt-get install pulseaudio-utils lame mpg123 ffmpeg")
+			println("On Debian/Ubuntu - try installing pulseaudio-utils lame mpg123 ffmpeg")
 			return err
 		}
 		Excecutables[key] = path
@@ -24,10 +24,10 @@ func InitExec() error {
 }
 
 func ExcecCmd(command string) (string, error) {
-	return ExcecProgram("bash", "-c", command)
+	return ExcecProgram("sh", "-c", command)
 }
 func ExcecCmdToString(command string) (string, error) {
-	return ExcecProgramToString("bash", "-c", command)
+	return ExcecProgramToString("sh", "-c", command)
 }
 
 func ExcecProgram(program string, arg ...string) (string, error) {
@@ -68,7 +68,7 @@ func OpenProgram(program string, arg ...string) (string, error) {
 }
 
 func ExcecCmdTask(command string, endTask chan bool) (string, error) {
-	return ExcecTask("bash", endTask, "-c", command)
+	return ExcecTask("sh", endTask, "-c", command)
 }
 
 func ExcecTask(program string, endTask chan bool, arg ...string) (string, error) {

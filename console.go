@@ -28,10 +28,19 @@ func CheckError(err error) {
 	}
 }
 
-func PrintError(err error) {
+func PrintError(err error) bool {
 	if err != nil {
 		println(err.Error())
+		return true
 	}
+	return false
+}
+
+func GetErrorString(err error) string {
+	if err != nil {
+		return err.Error()
+	}
+	return ""
 }
 
 func PromptOptions(msg string, options map[string]string) string {

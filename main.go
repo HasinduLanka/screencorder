@@ -2,8 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -15,100 +13,17 @@ import (
 	"strings"
 )
 
+var AudioEnabled bool = false
+var DefaultVideoType string = "mkv"
+var NoReEncode bool = false
+
+var DefaultVideoCodec string = " "
+
 var wsroot string = "workspace/"
 var rootDir string = ""
 
 var SpeakerInputName string = ""
-var AudioEnabled bool = false
 var SSLEnabled bool = false
-
-var API_POSTs map[string]API_POST_Recieved = map[string]API_POST_Recieved{
-	"api/recchunk":    RecChunkRecieved,
-	"api/mirrorchunk": MirrorChunkRecieved,
-	"api/mirecchunk":  MirrorAndRecChunkRecieved,
-	"api/final":       FinalRecieved,
-	"api/end":         EndRecieved}
-
-var API_GETs map[string]API_GET_Recieved = map[string]API_GET_Recieved{
-	"api/start":     StartRec,
-	"api/mstart":    StartRecOnlyMirror,
-	"api/handshake": Handshake,
-	"api/reqview":   View,
-	"mapi/reqview":  View}
-
-func ServeFull(w http.ResponseWriter, r *http.Request) {
-	// if r.URL.Path != "/" {
-	// 	http.Error(w, "404 not found.", http.StatusNotFound)
-	// 	return
-	// }
-
-	urlpath := strings.ReplaceAll(strings.TrimPrefix(r.URL.Path, "/"), "..", "")
-
-	switch r.Method {
-	case "GET":
-
-		for apiPath, api := range API_GETs {
-			if strings.HasPrefix(urlpath, apiPath) {
-				resp := api(strings.TrimPrefix(urlpath, apiPath+"/"))
-				if resp.headers != nil {
-					for k, v := range resp.headers {
-						w.Header().Set(k, v)
-					}
-				}
-				if len(resp.body) > 0 {
-					w.Write(resp.body)
-				}
-				return
-			}
-		}
-
-		// If no API
-		fmt.Println("Serving " + urlpath)
-
-		http.ServeFile(w, r, path.Join(rootDir, urlpath))
-
-	case "POST":
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			log.Printf("Error reading body: %v", err)
-			http.Error(w, "can't read body", http.StatusBadRequest)
-			return
-		}
-
-		println("POST " + urlpath + " body length " + strconv.Itoa(len(body)))
-
-		for apiPath, api := range API_POSTs {
-			if strings.HasPrefix(urlpath, apiPath) {
-				resp := api(strings.TrimPrefix(urlpath, apiPath+"/"), body)
-
-				if resp.headers != nil {
-					for k, v := range resp.headers {
-						w.Header().Set(k, v)
-					}
-				}
-				if len(resp.body) > 0 {
-					w.Write(resp.body)
-				}
-
-			}
-		}
-
-	default:
-		fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
-	}
-}
-
-func ServeMirrorAsRoot(w http.ResponseWriter, r *http.Request) {
-
-	urlpath := strings.ReplaceAll(strings.TrimPrefix(r.URL.Path, "/"), "..", "")
-
-	if len(urlpath) == 0 || urlpath == "index.html" || urlpath == "index" {
-		http.Redirect(w, r, "/mirror/viewer.html", http.StatusSeeOther)
-	} else if strings.HasPrefix(urlpath, "mapi/") || strings.HasPrefix(urlpath, "mirror/") {
-		ServeFull(w, r)
-	}
-
-}
 
 func main() {
 	println("                   .                  ")
@@ -124,6 +39,13 @@ func main() {
 	println("       Github.com/Bitblazers-lk       ")
 	println("--------------------------------------")
 	println("                   .                  ")
+	println("                                      ")
+	println("                                      ")
+
+	args := os.Args
+	if RunArgs(args) {
+		return
+	}
 
 	HomeDir, HomeDirErr := os.UserHomeDir()
 	if HomeDirErr == nil {
@@ -162,12 +84,6 @@ func main() {
 	if HiErr != nil {
 		println(HiErr.Error())
 	}
-
-	// EndTask := make(chan bool)
-	// go ExcecCmdTask("echo BashWorks1 > bashworks ; sleep 2 ; echo BashWorks2 >>  bashworks ; sleep 2 ; echo BashWorks3 >>  bashworks ; sleep 3 ; echo BashWorks4 >>  bashworks", EndTask)
-
-	// time.Sleep(time.Second * 1)
-	// EndTask <- false
 
 	if AudioEnabled {
 		AudioEnabled = false
@@ -304,5 +220,92 @@ func DetectSoundInput() {
 	}
 	AudioEnabled = true
 	println("Selected sound device " + SpeakerInputName)
+
+}
+
+// Returns true if the program needs to exit
+func RunArgs(args []string) bool {
+
+	SkipNext := false
+
+	for i := 0; i < len(args); i++ {
+		if SkipNext {
+			SkipNext = false
+			continue
+		}
+
+		switch args[i] {
+
+		case "-h", "--help":
+			PrintHelp()
+			return true
+
+		case "-ns", "-nosound":
+			AudioEnabled = false
+
+		case "-t", "-type":
+			if i+1 < len(args) {
+				if val := args[i+1]; len(val) != 0 {
+					DefaultVideoType = val
+					SkipNext = true
+				}
+			}
+
+		case "-vc", "-vcodec":
+			if i+1 < len(args) {
+				if val := args[i+1]; len(val) != 0 {
+					if val == "auto" {
+						DefaultVideoCodec = " "
+					} else {
+						DefaultVideoCodec = " -vcodec " + val
+					}
+					SkipNext = true
+				}
+			}
+
+		case "-s", "-safe":
+			AudioEnabled = false
+			DefaultVideoType = "mkv"
+			DefaultVideoCodec = " "
+		}
+	}
+
+	return false
+}
+
+func PrintHelp() {
+
+	println(`
+	
+	Simple, fast screen recorder written in Go.
+
+Usage : 
+	-h, --help: Prints this help
+	
+	-ns, -nosound: Disables system sound recording. (Default)
+	-ps, -parec-sound -: Enable system sound recording using 'parec' . Disabled by default.
+
+	-t {filetype}, -type {filetype} : Sets the output file type and file extention. Default is mkv.
+				 
+				 If you are using no-re-encode option, you must use mkv or mp4.
+				 Please test this with your web browser first.
+
+				 If you are re-encoding the video,
+				  you can use any video format that supports codec level concatenation 
+				 These formats are supported as we know of : mp4, mkv, mpeg
+
+
+	-vc, -vcodec: Sets the video codec for ffmpeg re-encoding. Default is 'auto'.
+
+	             Please check with your ffmpeg installation for supported codecs. 
+				 Pass '-vcodec auto' to let ffmpeg decide the video codec.
+				 Pass '-vcodec libx264' for H.264 video codec.
+
+				 Use command 'ffmpeg -codecs' to see the list of supported codecs.
+				 Make sure it is in the list and 'DE' is present on capabilities.
+
+    -s, -safe: Safe mode for better compatibility.
+	             This is same as '-vcodec auto -ns -t mkv'
+`)
 
 }

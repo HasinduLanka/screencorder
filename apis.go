@@ -177,9 +177,26 @@ func FinalRecieved(para_paths string, body []byte) Response {
 			}
 		}
 
+		AudioEnabledAndWorking := AudioEnabled
+		APath := path + ".wav"
+
+		if AudioEnabledAndWorking {
+			WaitTimeout := 10
+			APathWS := wsroot + APath
+			for !FileExists(APathWS) && WaitTimeout > 0 {
+				time.Sleep(500 * time.Millisecond)
+				WaitTimeout--
+			}
+
+			if WaitTimeout <= 0 && !FileExists(APathWS) {
+				PrintError(errors.New("FinalRecieved: Recorded system sound file '" + APath + "' not found. Ignoring audio."))
+				AudioEnabledAndWorking = false
+			}
+		}
+
 		var ConcatChunkList []string
 
-		if AudioEnabled {
+		if AudioEnabledAndWorking {
 
 			fflist := ""
 			ConcatChunkList = make([]string, 0, 4)
@@ -199,7 +216,8 @@ func FinalRecieved(para_paths string, body []byte) Response {
 			HiOut, HiErr := ExcecProgramToString("ffmpeg", "-f", "concat", "-safe", "0", "-i", ChFFLIST, "-c", "copy", VPath)
 
 			AVPath := path + "-av." + DefaultVideoType
-			MuxOut, MuxErr := ExcecCmdToString("ffmpeg -i " + VPath + " -i " + path + ".wav -map 0:v -map 1:a -c:v copy -shortest " + AVPath)
+
+			MuxOut, MuxErr := ExcecCmdToString("ffmpeg -i " + VPath + " -i " + APath + " -map 0:v -map 1:a -c:v copy -shortest " + AVPath)
 
 			ConcatChunkList = append(ConcatChunkList, AVPath)
 			ChunkList = append(ChunkList, AVPath) // To delete

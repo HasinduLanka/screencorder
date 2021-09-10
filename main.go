@@ -77,7 +77,7 @@ func main() {
 
 	println("Operating on " + rootDir)
 
-	CheckError(InitExec())
+	CheckError(InitExec([]string{"ffmpeg", "echo", "sh"}))
 
 	HiOut, HiErr := ExcecCmd("echo 'System calls working'")
 	println(HiOut)
@@ -186,6 +186,8 @@ func CheckSSL() bool {
 
 func DetectSoundInput() {
 
+	CheckError(InitExec([]string{"pacmd", "parec", "lame"}))
+
 	DSo, DSErr := ExcecProgramToString("pacmd", "list-sinks")
 	PrintError(DSErr)
 	// println(DSo)
@@ -242,6 +244,9 @@ func RunArgs(args []string) bool {
 
 		case "-ns", "-nosound":
 			AudioEnabled = false
+
+		case "-ps", "-parec-sound":
+			AudioEnabled = true
 
 		case "-t", "-type":
 			if i+1 < len(args) {

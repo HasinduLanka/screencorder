@@ -7,14 +7,13 @@ import (
 	"strings"
 )
 
-var Excecutables map[string]string = map[string]string{"ffmpeg": "", "echo": "", "sh": "", "pacmd": "", "parec": "", "lame": ""}
+var Excecutables map[string]string = map[string]string{}
 
-func InitExec() error {
-	for key := range Excecutables {
+func InitExec(ExcecutableNames []string) error {
+	for _, key := range ExcecutableNames {
 		path, err := exec.LookPath(key)
 		if err != nil {
 			println("Some excecutables not found. Please make sure you have installed all the needed dependencies.")
-			println("On Debian/Ubuntu - try installing pulseaudio-utils lame mpg123 ffmpeg")
 			return err
 		}
 		Excecutables[key] = path

@@ -47,31 +47,44 @@ func RecChunkRecieved(path string, chunk []byte) Response {
 			CEncodeType = "c"
 		}
 
+		//--------------------
+		//  preset | quality |
+		//---------|----------
+		//  fms    | uhbl     |
+
 		switch CEncodeType {
-		case "c":
+		case "c": // Browser encoder | Fastest and Highest quality | Some browsers may not support this
 			EncodeType = " -c copy "
 			OutputType = DefaultVideoType
-		case "r":
+
+		case "r": // Device encoder | Highest compatibility | Auto selects encoding
 			EncodeType = " "
 			OutputType = DefaultVideoType
-		case "uf":
-			EncodeType = DefaultVideoCodec + " -crf 22 -preset ultrafast "
-			OutputType = DefaultVideoType
-		case "f":
-			EncodeType = DefaultVideoCodec + " -crf 20 -preset veryfast "
-			OutputType = DefaultVideoType
-		case "m":
+
+		case "fh": // High quality | Medium CPU usage | Bigger file size
 			EncodeType = DefaultVideoCodec + " -crf 18 -preset veryfast "
 			OutputType = DefaultVideoType
-		case "q":
-			EncodeType = DefaultVideoCodec + " -crf 16 -preset medium "
+
+		case "fb": // Low CPU usage | Good quality | Medium file size
+			EncodeType = DefaultVideoCodec + " -crf 22 -preset veryfast "
 			OutputType = DefaultVideoType
-		case "hq":
-			EncodeType = DefaultVideoCodec + " -crf 14 -preset slow "
+
+		case "ml": // Smallest file size | Lower quality | Medium CPU usage
+			EncodeType = DefaultVideoCodec + " -crf 28 -preset slower "
 			OutputType = DefaultVideoType
-		case "uq":
-			EncodeType = DefaultVideoCodec + " -crf 10 -preset slow "
+
+		case "fl": // Lowest CPU usage | Medium quality | Bigger file size
+			EncodeType = DefaultVideoCodec + " -crf 24 -preset ultrafast "
 			OutputType = DefaultVideoType
+
+		case "sh": // High quality | High CPU usage | Small file size
+			EncodeType = DefaultVideoCodec + " -crf 18 -preset slower "
+			OutputType = DefaultVideoType
+
+		case "su": // Highest quality | Highest CPU usage | Medium file size
+			EncodeType = DefaultVideoCodec + " -crf 14 -preset slower "
+			OutputType = DefaultVideoType
+
 		default:
 			PrintError(errors.New("RecChunkRecieved: Encode type is not valid : " + CEncodeType))
 			EncodeType = " "

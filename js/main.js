@@ -34,7 +34,7 @@ var CreateMediaRecorder ;
 var MediaRecStream;
 
 
-var Host_Encoding = "c"; // c, r, uf, f, m, q, hq, uq
+var Host_Encoding = "c"; // c, r, fh, fb, ml, fl, sh, su
 
 Init_main();
 
@@ -49,6 +49,9 @@ function Init_main(){
 
   console.log('Best supported mime type : ', BestMimeType);
   console.log('Best video format : ', BestVideoFormat);
+
+  document.getElementById("LblEnc").innerHTML = "Your browser will encode in " + BestMimeType + " format";
+
   SetQlt("0");
 
   GetURL("handshake/" + filename);
@@ -277,6 +280,8 @@ function SelectQltyChanged() {
 
 }
 
+
+
 function SetQlt(q) {
 
   
@@ -361,6 +366,19 @@ function SetQlt(q) {
 
 
 
+function SelectEncChanged() {
+  var x = document.getElementById("SlctEnc").value;
+  SetHostEnc(x);
+
+}
+
+function SetHostEnc(enc) {
+  Host_Encoding = enc;
+  console.log("Host Encoding : " + Host_Encoding);
+  
+}
+
+
 
 function getSupportedMimeTypes() {
   const VIDEO_TYPES = [
@@ -387,7 +405,6 @@ function getSupportedMimeTypes() {
         `${type};codecs:${codec}`,
         `${type};codecs=${codec.toUpperCase()}`,
         `${type};codecs:${codec.toUpperCase()}`,
-        `${type}`
       ]
       variations.forEach(variation => {
         if(MediaRecorder.isTypeSupported(variation)) 
@@ -395,5 +412,13 @@ function getSupportedMimeTypes() {
       })
     });
   });
+
+  VIDEO_TYPES.forEach((videoType) => {
+    const type = `video/${videoType}`;
+    if(MediaRecorder.isTypeSupported(type)) 
+            supportedTypes.push({mime : type , vtype : videoType});
+      
+  });
+  
   return supportedTypes;
 }

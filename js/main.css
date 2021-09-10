@@ -109,3 +109,10 @@ hr {
     border-bottom-color: #515766;
     border-bottom: 1px;
 }
+
+
+.hvcenter {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }

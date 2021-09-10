@@ -24,7 +24,6 @@
 
   <title>Screencorder</title>
 
-
 </head>
 
 <body>
@@ -51,9 +50,19 @@
           </td>
         </tr>
         <tr>
-          <td style="padding:8px !important;" rowspan="2">
+          <td rowspan="2">
+            <div style="width:100%;height:100%;" class="hvcenter">
+              
+                <button class="btn"
+                  style="height:10rem;width:90%; padding: auto; border-radius: 5%; background-color: #e34433;  "
+                  id="startRecButton" onclick="StartRec()">Record</button>
+              
+            </div>
+          </td>
+          <td style="padding:8px !important;" rowspan="1">
             <div style="width:100%;height:100%">
-              <label>REC Quality</label>
+              <br>
+              <label>Record Quality</label>
               <select style="font-size:12px;width:100%" id="SlctQlty" onchange="SelectQltyChanged()">
                 <option value="0">Original Quality </option>
                 <option value="100">Text Optimized Quality </option>
@@ -63,37 +72,51 @@
                 <option value="4"> Low Quality </option>
                 <option value="5"> Lowest Quality </option>
               </select>
-              <hr />
-              <label id="LblQlty"> Window Bitrate and Framerate </label><br />
+              <br>
+              <br>
+              <label id="LblQlty"> Window Bitrate and Framerate </label>
+              <br />
             </div>
           </td>
+          
         </tr>
         <tr>
+          <td style="padding:8px !important;" rowspan="1">
 
-          <td rowspan="2">
-            <div style="width:100%;height:100%;">
-              <center>
-                <button class="btn"
-                  style="height:5rem;width:5rem;padding-top:1rem; border-radius: 40%; background-color: #e34433; margin: 0.5rem ;"
-                  id="startRecButton" onclick="StartRec()">Record</button>
-              </center>
+            <div style="width:100%;height:100%">
+              
+              <label id="LblEnc"> Your browser will encode in ---- format </label>
+              <br>
+              <br>
+              <label>Encode Gear </label>
+              <select style="font-size:12px;width:100%" id="SlctEnc" onchange="SelectEncChanged()">
+                <option value="c"> Browser encoder | Fastest and Highest quality | Some browsers may not support this </option>
+                <option value="r"> Device encoder | Highest compatibility | Auto selects encoding </option>
+                <option value="fh"> High quality | Medium CPU usage | Bigger file size </option>
+                <option value="fb"> Low CPU usage | Good quality | Medium file size </option>
+                <option value="ml"> Smallest file size | Lower quality | Medium CPU usage </option>
+                <option value="fl"> Lowest CPU usage | Medium quality | Bigger file size </option>
+                <option value="sh"> High quality | High CPU usage | Small file size </option>
+                <option value="su"> Highest quality | Highest CPU usage | Medium file size </option>
+              </select>
+             
+              <br>
+              <br>
             </div>
+            
+          
           </td>
         </tr>
+       
 
       </table>
 
-      <br>
 
     </div>
-    <br>
 
 
 
   </div>
-
-  <br>
-  <br />
 
   <br>
 

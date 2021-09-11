@@ -26,7 +26,6 @@ const PRECACHE_URLS = [
     '404.html',
     'screen.png',
     'favicon.ico',
-    'manifest.json'
 ];
 
 // The install handler takes care of precaching the resources we always need.

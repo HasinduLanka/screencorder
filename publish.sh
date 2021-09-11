@@ -18,7 +18,6 @@ cp update ../publish/www/
 cp 404.html ../publish/www/
 cp favicon.ico ../publish/www/
 cp index.html ../publish/www/
-cp manifest.json ../publish/www/
 cp screen.png ../publish/www/
 cp serviceworker.js ../publish/www/
 cp README.md ../publish/www/

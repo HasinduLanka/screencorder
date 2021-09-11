@@ -20,18 +20,19 @@ func LoadURI(uri string) ([]byte, error) {
 	}
 }
 
-func AppendFile(filename string, content []byte) {
+func AppendFile(filename string, content []byte) bool {
 	F, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm)
-	CheckError(err)
 	F.Write(content)
 	F.Close()
+	return !PrintError(err)
 }
 
-func WriteFile(filename string, content []byte) {
+func WriteFile(filename string, content []byte) bool {
 	F, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, os.ModePerm)
-	CheckError(err)
 	F.Write(content)
 	F.Close()
+	return !PrintError(err)
+
 }
 func FileExists(filename string) bool {
 	_, err := os.Stat(filename)
@@ -45,13 +46,13 @@ func FileExists(filename string) bool {
 
 }
 
-func MakeDir(name string) {
-	os.MkdirAll(name, os.ModePerm)
+func MakeDir(name string) bool {
+	return !PrintError(os.MkdirAll(name, os.ModePerm))
 }
 
-func DeleteFiles(name string) {
+func DeleteFiles(name string) bool {
 	println("Deleting file " + name)
-	os.RemoveAll(name)
+	return !PrintError(os.RemoveAll(name))
 }
 
 func LoadURIToString(uri string) (string, error) {
@@ -85,7 +86,7 @@ func DownloadToFile(filepath string, url string) error {
 
 	// Write the body to file
 	_, err = io.Copy(out, body)
-	CheckError(body.Close())
+	PrintError(body.Close())
 	return err
 }
 
@@ -108,7 +109,7 @@ func DownloadFileToBytes(url string) ([]byte, error) {
 		return nil, err
 	}
 	out := StreamToByte(str)
-	CheckError(str.Close())
+	PrintError(str.Close())
 	return out, nil
 }
 
@@ -119,7 +120,7 @@ func DownloadFileToString(url string) (string, error) {
 		return "", err
 	}
 	out := StreamToString(str)
-	CheckError(str.Close())
+	PrintError(str.Close())
 	return out, nil
 }
 

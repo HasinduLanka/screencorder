@@ -22,12 +22,6 @@ func Prompt(msg string) string {
 	return ReadLine()
 }
 
-func CheckError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func PrintError(err error) bool {
 	if err != nil {
 		println(err.Error())

@@ -62,27 +62,27 @@ func RecChunkRecieved(path string, chunk []byte) Response {
 			OutputType = DefaultVideoType
 
 		case "fh": // High quality | Medium CPU usage | Bigger file size
-			EncodeType = DefaultVideoCodec + " -crf 18 -preset veryfast "
+			EncodeType = FFMPEGArgs + " -crf 18 -preset veryfast "
 			OutputType = DefaultVideoType
 
 		case "fb": // Low CPU usage | Good quality | Medium file size
-			EncodeType = DefaultVideoCodec + " -crf 22 -preset veryfast "
+			EncodeType = FFMPEGArgs + " -crf 22 -preset veryfast "
 			OutputType = DefaultVideoType
 
 		case "ml": // Smallest file size | Lower quality | Medium CPU usage
-			EncodeType = DefaultVideoCodec + " -crf 28 -preset slower "
+			EncodeType = FFMPEGArgs + " -crf 28 -preset slower "
 			OutputType = DefaultVideoType
 
 		case "fl": // Lowest CPU usage | Medium quality | Bigger file size
-			EncodeType = DefaultVideoCodec + " -crf 24 -preset ultrafast "
+			EncodeType = FFMPEGArgs + " -crf 24 -preset ultrafast "
 			OutputType = DefaultVideoType
 
 		case "sh": // High quality | High CPU usage | Small file size
-			EncodeType = DefaultVideoCodec + " -crf 18 -preset slower "
+			EncodeType = FFMPEGArgs + " -crf 18 -preset slower "
 			OutputType = DefaultVideoType
 
 		case "su": // Highest quality | Highest CPU usage | Medium file size
-			EncodeType = DefaultVideoCodec + " -crf 14 -preset slower "
+			EncodeType = FFMPEGArgs + " -crf 14 -preset slower "
 			OutputType = DefaultVideoType
 
 		default:
@@ -108,7 +108,7 @@ func RecChunkRecieved(path string, chunk []byte) Response {
 func FinalRecieved(para_paths string, body []byte) Response {
 
 	paths := strings.Split(para_paths, "/")
-	if len(paths) != 2 {
+	if len(paths) < 2 {
 		PrintError(errors.New("FinalRecieved: Path is not valid : " + para_paths))
 		return BodyResponse([]byte("Host : FinalRecieved : Paths are not valid : " + para_paths))
 	}
@@ -118,7 +118,15 @@ func FinalRecieved(para_paths string, body []byte) Response {
 
 	go func() {
 
-		println("Finalizing " + path)
+		var EndRecord bool = false
+		if newpath == "end" {
+			EndRecord = true
+			println("-----|-|-|------ \n\n\tEnding " + path)
+
+		} else {
+			println("Finalizing " + path)
+
+		}
 
 		if AudioEnabled {
 			// End Audio recording
@@ -128,8 +136,9 @@ func FinalRecieved(para_paths string, body []byte) Response {
 				delete(AudioTasks, path)
 			}
 
-			if newpath == "end" {
+			if EndRecord {
 				ExcecCmdToString("pkill parec")
+
 			} else {
 				go startRecSysAudio(newpath)
 			}
@@ -238,6 +247,20 @@ func FinalRecieved(para_paths string, body []byte) Response {
 			ConcatChunkList = ChunkList
 		}
 
+		var EndFileName string
+
+		if EndRecord {
+			if len(paths) < 3 {
+				EndFileName = EndFileDir + path + "-screencorder"
+			} else {
+				EndFileName = EndFileDir + paths[2]
+			}
+		} else {
+			EndFileName = path
+		}
+
+		EndFile := EndFileName + "." + DefaultVideoType
+
 		{
 			fflist := ""
 			for _, chfile := range ConcatChunkList {
@@ -246,13 +269,15 @@ func FinalRecieved(para_paths string, body []byte) Response {
 
 			WriteFile(wsroot+path+".fflist", []byte(fflist))
 
-			HiOut, HiErr := ExcecProgramToString("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", path+"."+DefaultVideoType)
+			HiOut, HiErr := ExcecProgramToString("ffmpeg", "-f", "concat", "-safe", "0", "-i", path+".fflist", "-c", "copy", EndFile)
 
 			println("\n\n" + HiOut + "\n\n")
 			PrintError(HiErr)
 		}
 
-		RecievedChunks[path] = path + "." + DefaultVideoType
+		if !EndRecord {
+			RecievedChunks[path] = EndFile
+		}
 
 		go func() {
 			for _, chnk := range ChunkList {

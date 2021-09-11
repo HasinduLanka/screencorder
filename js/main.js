@@ -15,8 +15,8 @@ var QualityOptions ;
 var GUMConstraints ;
 
 var RecordEnabled = false;
-var chunksPerStack = 30; // 30 || 5
-var chunkLength = 1500; // 1500 || 10000
+var chunksPerStack = 8; // 30 || 5
+var chunkLength = 5000; // 1500 || 10000
 var chunkUploadURI = "recchunk/";
 var startURI = "start/";
 
@@ -52,6 +52,11 @@ function Init_main(){
 
   document.getElementById("LblEnc").innerHTML = "Your browser will encode in " + BestMimeType + " format";
 
+  document.getElementById("TxtFileName").value = filename;
+  document.getElementById("TxtFileExt").innerHTML = ".mkv";
+
+  
+
   SetQlt("0");
 
   GetURL("handshake/" + filename);
@@ -71,9 +76,6 @@ function Init_main(){
 
 function StartRec() {
   RecordEnabled = true;
-
-  chunksPerStack = 5;
-  chunkLength = 5000;
 
   navigator.mediaDevices.getDisplayMedia(GUMConstraints)
     .then(handleSuccess, handleError);
@@ -218,14 +220,32 @@ function FinalizeRecord() {
   if (IsRecording) {
     nextfilename = filename;
     // GetURL(startURI + filename);
+
+    uploadText("final/" + cfilename + "/" + nextfilename, fflist);
+
   }
   else
   {
     IsEndSuccess = true;
     nextfilename = "end";
+    var EndFilename = document.getElementById("TxtFileName").value;
+
+    EndFilename = EndFilename.replaceAll(" ","-");
+    EndFilename = encodeURI(EndFilename);
+
+    if(EndFilename.length == 0)
+    {
+      EndFilename = filename;
+    }
+
+    
+    uploadText("final/" + cfilename + "/" + nextfilename + "/" + EndFilename , fflist);
+
+    filename = "Record-" + Date.now().toString();
+    document.getElementById("TxtFileName").value = filename;
+
   }
 
-  uploadText("final/" + cfilename + "/" + nextfilename, fflist);
 
   fileindex = 1;
   FinalizedFileindex = 0;
@@ -240,7 +260,7 @@ function FinalizeRecord() {
 
 function EndRecord() {
 
-  uploadText("end/" + filename, "");
+  // uploadText("end/" + filename, "");
 
   filename = "Record-" + Date.now().toString();
   fileindex = 1;

@@ -17,8 +17,9 @@ var AudioEnabled bool = false
 var DefaultVideoType string = "mkv"
 var NoReEncode bool = false
 
-var DefaultVideoCodec string = " "
+var FFMPEGArgs string = " "
 
+var EndFileDir string
 var wsroot string = "workspace/"
 var rootDir string = ""
 
@@ -42,11 +43,6 @@ func main() {
 	println("                                      ")
 	println("                                      ")
 
-	args := os.Args
-	if RunArgs(args) {
-		return
-	}
-
 	HomeDir, HomeDirErr := os.UserHomeDir()
 	if HomeDirErr == nil {
 		HomeVideo := path.Join(HomeDir, "Videos/screencorder") + "/"
@@ -54,7 +50,32 @@ func main() {
 			wsroot = HomeVideo
 		}
 	}
+	EndFileDir = wsroot
+
+	args := os.Args
+	if RunArgs(args) {
+		return
+	}
+
+	// wsroot might be changed by command line arguments
+
+	if !strings.HasSuffix(wsroot, "/") {
+		wsroot = wsroot + "/"
+	}
+
+	if !strings.HasSuffix(EndFileDir, "/") {
+		EndFileDir = EndFileDir + "/"
+	}
+
 	MakeDir(wsroot)
+	MakeDir(EndFileDir)
+
+	if CheckDir(EndFileDir) {
+		println("Output Directory " + EndFileDir + " is working")
+	} else {
+		println("Error : Output Directory " + EndFileDir + " is not working properly")
+		return
+	}
 
 	if FileExists("index.html") {
 		cwd, cwderr := filepath.Abs("")
@@ -77,7 +98,9 @@ func main() {
 
 	println("Operating on " + rootDir)
 
-	CheckError(InitExec([]string{"ffmpeg", "echo", "sh"}))
+	if PrintError(InitExec([]string{"ffmpeg", "echo", "sh"})) {
+		return
+	}
 
 	HiOut, HiErr := ExcecCmd("echo 'System calls working'")
 	println(HiOut)
@@ -186,7 +209,9 @@ func CheckSSL() bool {
 
 func DetectSoundInput() {
 
-	CheckError(InitExec([]string{"pacmd", "parec", "lame"}))
+	if PrintError(InitExec([]string{"pacmd", "parec", "lame"})) {
+		return
+	}
 
 	DSo, DSErr := ExcecProgramToString("pacmd", "list-sinks")
 	PrintError(DSErr)
@@ -225,6 +250,21 @@ func DetectSoundInput() {
 
 }
 
+func CheckDir(dir string) bool {
+	if !strings.HasSuffix(dir, "/") {
+		dir = dir + "/"
+	}
+
+	if WriteFile(dir+"test-directory", []byte("Ensure this folder is working")) {
+		if DeleteFiles(dir + "test-directory") {
+			return true
+		}
+	}
+
+	return false
+
+}
+
 // Returns true if the program needs to exit
 func RunArgs(args []string) bool {
 
@@ -260,10 +300,25 @@ func RunArgs(args []string) bool {
 			if i+1 < len(args) {
 				if val := args[i+1]; len(val) != 0 {
 					if val == "auto" {
-						DefaultVideoCodec = " "
+						FFMPEGArgs = " "
 					} else {
-						DefaultVideoCodec = " -vcodec " + val
+						FFMPEGArgs = " -vcodec " + val
 					}
+					SkipNext = true
+				}
+			}
+
+		case "-ws", "-workspace":
+			if i+1 < len(args) {
+				if val := args[i+1]; len(val) != 0 {
+					wsroot = val
+					SkipNext = true
+				}
+			}
+		case "-o", "-output-dir":
+			if i+1 < len(args) {
+				if val := args[i+1]; len(val) != 0 {
+					EndFileDir = val
 					SkipNext = true
 				}
 			}
@@ -271,8 +326,20 @@ func RunArgs(args []string) bool {
 		case "-s", "-safe":
 			AudioEnabled = false
 			DefaultVideoType = "mkv"
-			DefaultVideoCodec = " "
+			FFMPEGArgs = " "
+
+		case "-ffmpeg":
+			if i+1 < len(args) {
+
+				for j := i + 1; j < len(args); j++ {
+					if len(args[j]) != 0 {
+						FFMPEGArgs += " " + args[j]
+					}
+				}
+				return false
+			}
 		}
+
 	}
 
 	return false
@@ -308,6 +375,10 @@ Usage :
 
 				 Use command 'ffmpeg -codecs' to see the list of supported codecs.
 				 Make sure it is in the list and 'DE' is present on capabilities.
+
+	-ws, -workspace: Sets the workspace folder. Default is '$HOME/Videos/screencorder'
+
+	-o, -output-dir: Sets the output folder. Default is '$HOME/Videos/screencorder'
 
     -s, -safe: Safe mode for better compatibility.
 	             This is same as '-vcodec auto -ns -t mkv'

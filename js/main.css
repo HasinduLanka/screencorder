@@ -39,7 +39,7 @@ select {
         padding: 10px;
     }
 
-input[type=number] {
+input[type=number], input[type=text] {
     background-color: #4a5168;
     color: white;
     border-width: 0px;
@@ -97,17 +97,11 @@ td {
             background-color: #087c6f !important;
         }
 
-label {
+label, span {
     width: 100%;
     text-align: center;
     color: white;
-    font-size: 13px;
-}
-
-hr {
-    margin: 10px 0px;
-    border-bottom-color: #515766;
-    border-bottom: 1px;
+    font-size: 1rem;
 }
 
 

@@ -276,7 +276,7 @@ async function uploadText(path, txt) {
 }
 
 async function uploadBlob(path, blob) {
-  fetch(`/api/` + path, { method: "POST", body: blob, mode: 'no-cors' })
+  fetch(`/api/` + path, { method: "POST", body: blob })
     .then(response => response.text().then(value => { console.log("API POST : " + path, value);}))
 }
 

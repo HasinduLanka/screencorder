@@ -1,10 +1,3 @@
-/*
- *  Copyright (c) 2018 The WebRTC project authors. All Rights Reserved.
- *
- *  Use of this source code is governed by a BSD-style license
- *  that can be found in the LICENSE file in the root of the source
- *  tree.
- */
 'use strict';
 
 // Polyfill in Firefox.
@@ -15,71 +8,135 @@ if (adapter.browserDetails.browser == 'firefox') {
 
 const video = document.querySelector('video');
 var mediaRecorder;
-var QualityOptions = { mimeType: 'video/webm' }
-var GUMConstraints = { video: true };
 
-var MirrorEnabled = false;
+var BestMimeType;
+var BestVideoFormat;
+var QualityOptions ;
+var GUMConstraints ;
+
 var RecordEnabled = false;
-var chunksPerStack = 30; // 30 || 5
-var chunkLength = 1500; // 1500 || 10000
-var chunkUploadURI = "chunk/";
+var chunksPerStack = 8; // 30 || 5
+var chunkLength = 5000; // 1500 || 10000
+var chunkUploadURI = "recchunk/";
 var startURI = "start/";
 
 var filename = "Record-" + Date.now().toString();
 var fileindex = 1;
-var finalFiles = [];
+var FinalizedFileindex = 0;
+var FinalFile = "";
 var IsRecording = false;
-
-GetURL("handshake/" + filename)
-
-const DivSetQlt = document.getElementById('DivSetQlt');
-const DivVdo = document.getElementById('DivVdo');
+var IsEndSuccess = false;
 
 
+var recordedChunks = [];
+
+var CreateMediaRecorder ;
+var MediaRecStream;
 
 
-function StartMirror() {
-  RecordEnabled = false;
-  MirrorEnabled = true;
+var Host_Encoding = "c"; // c, r, fh, fb, ml, fl, sh, su
 
-  chunksPerStack = 30;
-  chunkLength = 1500;
-  chunkUploadURI = "mirrorchunk/";
-  startURI = "mstart/";
+Init_main();
 
-  navigator.mediaDevices.getDisplayMedia(GUMConstraints)
-    .then(handleSuccess, handleError);
+function Init_main(){
+
+
+  const supportedMimeTypes = getSupportedMimeTypes();
+  BestMimeType = supportedMimeTypes[0].mime;
+  BestVideoFormat = supportedMimeTypes[0].vtype;
+
+  console.log('All supported mime types ordered by priority : ', supportedMimeTypes);
+
+  console.log('Best supported mime type : ', BestMimeType);
+  console.log('Best video format : ', BestVideoFormat);
+
+  document.getElementById("LblEnc").innerHTML = "Your browser will encode in " + BestMimeType + " format";
+
+  document.getElementById("TxtFileName").value = filename;
+  document.getElementById("TxtFileExt").innerHTML = ".mkv";
+
+  
+
+  SetQlt("0");
+
+  GetURL("handshake/" + filename);
+
+  const DivSetQlt = document.getElementById('DivSetQlt');
+  const DivVdo = document.getElementById('DivVdo');
+  
+  if ((navigator.mediaDevices && 'getDisplayMedia' in navigator.mediaDevices)) {
+    DivSetQlt.hidden = false;
+    DivVdo.hidden = true;
+  } else {
+    errorMsg('getDisplayMedia is not supported');
+  }
+
 }
+
 
 function StartRec() {
   RecordEnabled = true;
-  MirrorEnabled = false;
-
-  chunksPerStack = 5;
-  chunkLength = 10000;
-  chunkUploadURI = "recchunk/";
-  startURI = "start/";
-
-  navigator.mediaDevices.getDisplayMedia(GUMConstraints)
-    .then(handleSuccess, handleError);
-}
-function StartMirrorRec() {
-  RecordEnabled = true;
-  MirrorEnabled = true;
-
-  chunksPerStack = 40;
-  chunkLength = 1500;
-  chunkUploadURI = "mirecchunk/";
-  startURI = "start/";
 
   navigator.mediaDevices.getDisplayMedia(GUMConstraints)
     .then(handleSuccess, handleError);
 }
 
+
+function handleSuccess(stream) {
+
+  DivSetQlt.hidden = true;
+  DivVdo.hidden = false;
+
+  // demonstrates how to detect that the user has stopped
+  // sharing the screen via the browser UI.
+  stream.getVideoTracks()[0].addEventListener('ended', () => {
+    errorMsg('Completed');
+    IsRecording = false;
+    IsEndSuccess = false;
+
+    DivVdo.hidden = true;
+
+    setTimeout(event => {
+      if (!IsEndSuccess) {
+        FinalizeRecord();
+      }
+
+      DivSetQlt.hidden = false;
+
+    }, 3000);
+
+
+  });
+
+
+  GetURL(startURI + filename)  
+  IsRecording = true;
+
+  MediaRecStream = stream;
+  video.srcObject = MediaRecStream;
+
+
+  CreateMediaRecorder = () => {
+    var newmediaRecorder = new MediaRecorder(MediaRecStream, QualityOptions);
+
+    newmediaRecorder.ondataavailable = handleDataAvailable;
+    newmediaRecorder.start();
+
+    mediaRecorder = newmediaRecorder;
+  };
+
+  CreateMediaRecorder();  
+
+  RestartMediaRecorder()
+
+  console.log("Started Recording");
+
+}
 
 function handleError(error) {
   errorMsg(`getDisplayMedia error: ${error.name}`, error);
 }
+
 
 function errorMsg(msg, error) {
   const errorElement = document.querySelector('#errorMsg');
@@ -88,51 +145,18 @@ function errorMsg(msg, error) {
     console.error(error);
   }
 }
-if ((navigator.mediaDevices && 'getDisplayMedia' in navigator.mediaDevices)) {
-  DivSetQlt.hidden = false;
-  DivVdo.hidden = true;
-} else {
-  errorMsg('getDisplayMedia is not supported');
-}
 
 
-function handleSuccess(stream) {
-  DivSetQlt.hidden = true;
-  DivVdo.hidden = false;
-  video.srcObject = stream;
-
-  // demonstrates how to detect that the user has stopped
-  // sharing the screen via the browser UI.
-  stream.getVideoTracks()[0].addEventListener('ended', () => {
-    errorMsg('Completed');
-    IsRecording = false;
-
-    DivSetQlt.hidden = false;
-    DivVdo.hidden = true;
-
-  });
-
-
-  console.log(stream);
-  GetURL(startURI + filename)
-  // var options = { mimeType: "video/webm; codecs=vp8" };
-  IsRecording = true;
-  mediaRecorder = new MediaRecorder(stream, QualityOptions);
-
-  mediaRecorder.ondataavailable = handleDataAvailable;
-  mediaRecorder.start();
-
-  RestartMediaRecorder()
-
-
-}
 
 
 function RestartMediaRecorder() {
   console.log("Chunk done");
   if (IsRecording) {
-    mediaRecorder.stop();
-    mediaRecorder.start();
+    
+    var oldMediaRec = mediaRecorder;
+    CreateMediaRecorder()
+    oldMediaRec.stop();
+
     setTimeout(event => {
       RestartMediaRecorder()
     }, chunkLength);
@@ -140,109 +164,112 @@ function RestartMediaRecorder() {
 
 }
 
-var recordedChunks = [];
-
-
-
-async function downloadText(txt, filename) {
-  var blob = new Blob([txt], { type: 'text/plain' });
-
-  // this will create a link tag on the fly
-  // <a href="..." download>
-  var link = document.createElement('a');
-  link.setAttribute('href', URL.createObjectURL(blob));
-  link.setAttribute('download', filename);
-
-  // NOTE: We need to add temporarily the link to the DOM so
-  //       we can trigger a 'click' on it.
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
 
 function handleDataAvailable(event) {
   console.log("data-available");
   if (event.data.size > 0) {
+
     recordedChunks.push(event.data);
     console.log(recordedChunks);
-
     uploadRecorded();
+
     if (fileindex >= chunksPerStack || !IsRecording) {
-      FinalizeRecord()
-      if (IsRecording) {
-        GetURL("start/" + filename)
-      }
+
+      FinalizeRecord();      
     }
   } else {
     // ...
   }
+  
+}
 
-  if (!IsRecording) {
-    EndRecord()
-  }
+function uploadRecorded() {
+  var newrecordedChunks = recordedChunks;
+  recordedChunks = [];
 
+  var blob = new Blob(newrecordedChunks, {
+    type: "video/" + BestVideoFormat
+  });
+  uploadBlob(chunkUploadURI +Host_Encoding + "/"+ "Ch-" + filename + "-" + pad(fileindex)+ "/" + BestVideoFormat, blob)
+  fileindex += 1;
 
 }
 
 
 function FinalizeRecord() {
 
-  finalFiles.push(filename);
 
   var fflist = "";
 
-  for (let i = 1; i < fileindex; i++) {
-    fflist = fflist + "file '" + filename + "-" + pad(i) + ".mkv'\n";
+  if (FinalFile.length != 0) {
+    fflist = FinalFile + "\n";
+  }
+  
+  FinalFile = filename;
+
+  for (let i = FinalizedFileindex + 1; i < fileindex; i++) {
+    fflist = fflist + "Ch-" + filename + "-" + pad(i) + "\n";
   }
 
-  uploadText("final/" + filename, fflist)
+  FinalizedFileindex = fileindex;
 
-  filename = "Record-" + Date.now().toString()
-  fileindex = 1
+  var cfilename = filename;
+  filename = "Record-" + Date.now().toString();
+  var nextfilename;
+
+  if (IsRecording) {
+    nextfilename = filename;
+    // GetURL(startURI + filename);
+
+    uploadText("final/" + cfilename + "/" + nextfilename, fflist);
+
+  }
+  else
+  {
+    IsEndSuccess = true;
+    nextfilename = "end";
+    var EndFilename = document.getElementById("TxtFileName").value;
+
+    EndFilename = EndFilename.replaceAll(" ","-");
+    EndFilename = encodeURI(EndFilename);
+
+    if(EndFilename.length == 0)
+    {
+      EndFilename = filename;
+    }
+
+    
+    uploadText("final/" + cfilename + "/" + nextfilename + "/" + EndFilename , fflist);
+
+    filename = "Record-" + Date.now().toString();
+    document.getElementById("TxtFileName").value = filename;
+
+  }
+
+
+  fileindex = 1;
+  FinalizedFileindex = 0;
+
+  if (!IsRecording) {
+    EndRecord();
+  }
+
+
 }
 
 
 function EndRecord() {
 
-  var fflist = "";
+  // uploadText("end/" + filename, "");
 
-  finalFiles.forEach(f => {
-    fflist = fflist + "file '" + f + ".mkv'\n";
-  });
-
-  uploadText("end/" + filename, fflist)
-
-  filename = "Record-" + Date.now().toString()
-  fileindex = 1
-  finalFiles = [];
-}
-
-function download() {
-  var blob = new Blob(recordedChunks, {
-    type: "video/webm"
-  });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement("a");
-  document.body.appendChild(a);
-  a.style = "display: none";
-  a.href = url;
-  a.download = filename + "-" + pad(fileindex) + ".webm";
-  fileindex += 1;
-  a.click();
-  window.URL.revokeObjectURL(url);
-  recordedChunks = []
+  filename = "Record-" + Date.now().toString();
+  fileindex = 1;
+  FinalizedFileindex = 0;
+  FinalFile = "";
+  // finalFiles = [];
 }
 
 
-function uploadRecorded() {
-  var blob = new Blob(recordedChunks, {
-    type: "video/webm"
-  });
-  uploadBlob(chunkUploadURI + filename + "-" + pad(fileindex), blob)
-  fileindex += 1;
-
-  recordedChunks = []
-}
 async function uploadText(path, txt) {
   var blob = new Blob([txt], { type: 'text/plain' });
   uploadBlob(path, blob);
@@ -251,7 +278,7 @@ async function uploadText(path, txt) {
 //http://localhost:49542
 async function uploadBlob(path, blob) {
   fetch(`/api/` + path, { method: "POST", body: blob, mode: 'no-cors' })
-    .then(response => response.text().then(value => console.log(value)))
+    .then(response => response.text().then(value => { console.log("API POST : " + path, value);}))
 }
 
 function pad(num) {
@@ -262,7 +289,7 @@ function pad(num) {
 //http://localhost:49542
 async function GetURL(path) {
   fetch(`/api/` + path, { method: "GET" })
-    .then(response => response.text().then(value => console.log(value)))
+    .then(response => response.text().then(value => console.log("API GET : " + path, value)))
 }
 
 
@@ -273,68 +300,79 @@ function SelectQltyChanged() {
 
 }
 
+
+
 function SetQlt(q) {
+
+  
 
   var TQ = "";
 
   switch (q) {
     case "0":
       QualityOptions = {
-        mimeType: 'video/webm'
+        mimeType: BestMimeType
       }
-      GUMConstraints = { video: true };
+      GUMConstraints = { video: true, audio: true };
       TQ = "Full quality and window framerate";
       break;
 
     case "1":
       QualityOptions = {
         videoBitsPerSecond: 8000000,
-        mimeType: 'video/webm'
+        audioBitsPerSecond: 128000,
+        mimeType: BestMimeType
       }
-      GUMConstraints = { video: { frameRate: { ideal: 60, max: 60 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 60, max: 60 } }, audio: true  };
       TQ = "8 Mbps @ 60 FPS max";
       break;
 
     case "2":
       QualityOptions = {
         videoBitsPerSecond: 5000000,
-        mimeType: 'video/webm'
+        audioBitsPerSecond: 128000,
+        mimeType: BestMimeType
       }
-      GUMConstraints = { video: { frameRate: { ideal: 30, max: 30 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 30, max: 30 } } , audio: true };
       TQ = "5 Mbps @ 30 FPS max";
       break;
 
     case "3":
       QualityOptions = {
         videoBitsPerSecond: 2500000,
-        mimeType: 'video/webm'
+        audioBitsPerSecond: 128000,
+        mimeType: BestMimeType
       }
-      GUMConstraints = { video: { frameRate: { ideal: 30, max: 30 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 30, max: 30 } }, audio: true  };
       TQ = "2.5 Mbps @ 30 FPS max";
       break;
 
     case "4":
       QualityOptions = {
         videoBitsPerSecond: 1000000,
-        mimeType: 'video/webm'
+        audioBitsPerSecond: 128000,
+        mimeType: BestMimeType
       }
-      GUMConstraints = { video: { frameRate: { ideal: 24, max: 30 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 24, max: 30 } } , audio: true };
       TQ = "1 Mbps @ 24 FPS max";
       break;
 
     case "5":
       QualityOptions = {
         videoBitsPerSecond: 600000,
-        mimeType: 'video/webm'
+        audioBitsPerSecond: 64000,
+        mimeType: BestMimeType
       }
-      GUMConstraints = { video: { frameRate: { ideal: 22, max: 24 } } };
+      GUMConstraints = { video: { frameRate: { ideal: 22, max: 24 } }, audio: true  };
       TQ = "600 kbps @ 22 FPS max";
       break;
     case "100":
       QualityOptions = {
-        mimeType: 'video/webm'
+        audioBitsPerSecond: 128000,
+        mimeType: BestMimeType
       }
-      GUMConstraints = { video: { frameRate: { ideal: 8, max: 10 } } };
+
+      GUMConstraints = { video: { frameRate: { ideal: 8, max: 10 } }, audio: true  };
       TQ = "Full quality @ 8 FPS max";
       break;
     default:
@@ -348,49 +386,59 @@ function SetQlt(q) {
 
 
 
-function PlaybackMic() {
-  navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+function SelectEncChanged() {
+  var x = document.getElementById("SlctEnc").value;
+  SetHostEnc(x);
 
-  var aCtx;
-  var analyser;
-  var microphone;
-  if (navigator.getUserMedia) {
-    navigator.getUserMedia(
-      { audio: true },
-      function (stream) {
-
-        aCtx = new (window.AudioContext || window.webkitAudioContext)();
-        // aCtx = new AudioContext();
-
-        window.AudioContext.
-          microphone = aCtx.createMediaStreamSource(stream);
-        var destination = aCtx.destination;
-        microphone.connect(destination);
-
-
-      },
-      function () { console.log("Error 003.") }
-    );
-  }
 }
 
-// const downloadButton = document.getElementById('downloadButton');
-
-// downloadButton.addEventListener('click', () => {
-
-//   var fflist = "";
-//   var fflistfilename = filename + ".fflist";
-
-//   var cmd = "#!/bin/bash\n";
-//   cmd = cmd + "ffmpeg -f concat -safe 0 -i " + fflistfilename + " -c copy " + filename + ".webm\nrm -f " + filename + "-*.webm\nrm -f " + filename + ".sh\n";
+function SetHostEnc(enc) {
+  Host_Encoding = enc;
+  console.log("Host Encoding : " + Host_Encoding);
+  
+}
 
 
-//   for (let i = 1; i < fileindex; i++) {
-//     fflist = fflist + "file '" + filename + "-" + pad(i) + ".webm'\n";
-//   }
 
-//   downloadText(fflist, fflistfilename);
-//   // uploadText("final/" + filename, fflist)
-//   downloadText(cmd, filename + ".sh");
+function getSupportedMimeTypes() {
+  const VIDEO_TYPES = [
+    "webm", 
+    "mp4",
+  ];
+  const VIDEO_CODECS = [
+    "h264",
+    "h.264",
+    "h265",
+    "h.265",
+    "vp9",
+    "vp9.0",
+    "vp8",
+    "vp8.0",
+  ];
 
-// });
+  const supportedTypes = [];
+  VIDEO_TYPES.forEach((videoType) => {
+    const type = `video/${videoType}`;
+    VIDEO_CODECS.forEach((codec) => {
+        const variations = [
+        `${type};codecs=${codec}`,
+        `${type};codecs:${codec}`,
+        `${type};codecs=${codec.toUpperCase()}`,
+        `${type};codecs:${codec.toUpperCase()}`,
+      ]
+      variations.forEach(variation => {
+        if(MediaRecorder.isTypeSupported(variation)) 
+            supportedTypes.push({mime : variation , vtype : videoType});
+      })
+    });
+  });
+
+  VIDEO_TYPES.forEach((videoType) => {
+    const type = `video/${videoType}`;
+    if(MediaRecorder.isTypeSupported(type)) 
+            supportedTypes.push({mime : type , vtype : videoType});
+      
+  });
+  
+  return supportedTypes;
+}

@@ -36,10 +36,10 @@ echo "Making .gits"
 
 echo "Building for Linux"
 
-env GOOS=linux GOARCH=386 go build -o ../screencorder-publish/linux.x86/screencorder .
-env GOOS=linux GOARCH=amd64 go build -o ../screencorder-publish/linux.amd64/screencorder .
-env GOOS=linux GOARCH=arm go build -o ../screencorder-publish/linux.arm/screencorder .
-env GOOS=linux GOARCH=arm64 go build -o ../screencorder-publish/linux.arm64/screencorder .
+env CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o ../screencorder-publish/linux.x86/screencorder .
+env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../screencorder-publish/linux.amd64/screencorder .
+env CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -o ../screencorder-publish/linux.arm/screencorder .
+env CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o ../screencorder-publish/linux.arm64/screencorder .
 
 ./pullgits.sh $1
 

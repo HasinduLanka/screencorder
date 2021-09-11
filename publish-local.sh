@@ -7,7 +7,6 @@ rm -rf ../screencorder-publish-local
 mkdir -p ../screencorder-publish-local/www
 
 cp -r js ../screencorder-publish-local/www/
-cp -r mirror ../screencorder-publish-local/www/
 cp -r imgs ../screencorder-publish-local/www/
 cp .gitignore ../screencorder-publish-local/www/
 cp update ../screencorder-publish-local/www/
@@ -28,9 +27,9 @@ cp -ra ../screencorder-publish-local/www ../screencorder-publish-local/linux.arm
 
 echo "Building for Linux"
 
-env GOOS=linux GOARCH=386 go build -o ../screencorder-publish-local/linux.x86/screencorder .
-env GOOS=linux GOARCH=amd64 go build -o ../screencorder-publish-local/linux.amd64/screencorder .
-env GOOS=linux GOARCH=arm go build -o ../screencorder-publish-local/linux.arm/screencorder .
-env GOOS=linux GOARCH=arm64 go build -o ../screencorder-publish-local/linux.arm64/screencorder .
+env CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o ../screencorder-publish-local/linux.x86/screencorder .
+env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../screencorder-publish-local/linux.amd64/screencorder .
+env CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -o ../screencorder-publish-local/linux.arm/screencorder .
+env CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o ../screencorder-publish-local/linux.arm64/screencorder .
 
 echo "screencorder-publish local completed"

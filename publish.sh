@@ -11,7 +11,6 @@ rm -rf ../screencorder-publish
 mkdir -p ../screencorder-publish/www
 
 cp -r js ../screencorder-publish/www/
-cp -r mirror ../screencorder-publish/www/
 cp -r imgs ../screencorder-publish/www/
 cp .gitignore ../screencorder-publish/www/
 cp update ../screencorder-publish/www/

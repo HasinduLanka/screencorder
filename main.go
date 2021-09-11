@@ -152,14 +152,6 @@ func main() {
 		go OpenProgram("xdg-open", "http://localhost:"+HTTPPort)
 	}
 
-	go func() {
-
-		if err := http.ListenAndServe(":49543", MirrorMux); err != nil {
-			log.Fatal(err)
-		}
-
-	}()
-
 	if SSLEnabled {
 		if err := http.ListenAndServeTLS(":"+HTTPPort, wsroot+"server.crt", wsroot+"server.key", FullMux); err != nil {
 			log.Fatal(err)

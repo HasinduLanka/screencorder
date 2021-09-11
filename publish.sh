@@ -7,26 +7,26 @@ echo "Cloning github state"
 
 echo "Copying static assests"
 
-rm -rf ../publish
-mkdir -p ../publish/www
+rm -rf ../screencorder-publish
+mkdir -p ../screencorder-publish/www
 
-cp -r js ../publish/www/
-cp -r mirror ../publish/www/
-cp -r imgs ../publish/www/
-cp .gitignore ../publish/www/
-cp update ../publish/www/
-cp 404.html ../publish/www/
-cp favicon.ico ../publish/www/
-cp index.html ../publish/www/
-cp screen.png ../publish/www/
-cp serviceworker.js ../publish/www/
-cp README.md ../publish/www/
-mkdir ../publish/www/workspace
+cp -r js ../screencorder-publish/www/
+cp -r mirror ../screencorder-publish/www/
+cp -r imgs ../screencorder-publish/www/
+cp .gitignore ../screencorder-publish/www/
+cp update ../screencorder-publish/www/
+cp 404.html ../screencorder-publish/www/
+cp favicon.ico ../screencorder-publish/www/
+cp index.html ../screencorder-publish/www/
+cp screen.png ../screencorder-publish/www/
+cp serviceworker.js ../screencorder-publish/www/
+cp README.md ../screencorder-publish/www/
+mkdir ../screencorder-publish/www/workspace
 
-cp -ra ../publish/www ../publish/linux.x86/
-cp -ra ../publish/www ../publish/linux.amd64/
-cp -ra ../publish/www ../publish/linux.arm/
-cp -ra ../publish/www ../publish/linux.arm64/
+cp -ra ../screencorder-publish/www ../screencorder-publish/linux.x86/
+cp -ra ../screencorder-publish/www ../screencorder-publish/linux.amd64/
+cp -ra ../screencorder-publish/www ../screencorder-publish/linux.arm/
+cp -ra ../screencorder-publish/www ../screencorder-publish/linux.arm64/
 
 
 echo "Making .gits"
@@ -36,12 +36,12 @@ echo "Making .gits"
 
 echo "Building for Linux"
 
-env GOOS=linux GOARCH=386 go build -o ../publish/linux.x86/screencorder .
-env GOOS=linux GOARCH=amd64 go build -o ../publish/linux.amd64/screencorder .
-env GOOS=linux GOARCH=arm go build -o ../publish/linux.arm/screencorder .
-env GOOS=linux GOARCH=arm64 go build -o ../publish/linux.arm64/screencorder .
+env GOOS=linux GOARCH=386 go build -o ../screencorder-publish/linux.x86/screencorder .
+env GOOS=linux GOARCH=amd64 go build -o ../screencorder-publish/linux.amd64/screencorder .
+env GOOS=linux GOARCH=arm go build -o ../screencorder-publish/linux.arm/screencorder .
+env GOOS=linux GOARCH=arm64 go build -o ../screencorder-publish/linux.arm64/screencorder .
 
 ./pullgits.sh $1
 
 
-echo "Publish completed"
+echo "screencorder-publish completed"

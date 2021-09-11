@@ -18,6 +18,7 @@ var DefaultVideoType string = "mkv"
 var NoReEncode bool = false
 
 var FFMPEGArgs string = " "
+var HTTPPort string = "49542"
 
 var EndFileDir string
 var wsroot string = "workspace/"
@@ -134,21 +135,21 @@ func main() {
 	}
 
 	if SSLEnabled {
-		println("Starting Screencorder http://localhost:49542 ")
+		println("Starting Screencorder http://localhost: " + HTTPPort)
 	} else {
-		println("Starting Screencorder https://localhost:49542 ")
+		println("Starting Screencorder https://localhost:" + HTTPPort)
 	}
 
 	if SSLEnabled {
-		println("Connect to the same LAN and visit \n https://" + myip + ":49542   for host interface, \n  http://" + myip + ":49543   for mirror")
+		println("Connect to the same LAN and visit \n https://" + myip + ":" + HTTPPort + "   for host interface")
 	} else {
-		println("Visit \n  http://localhost:49542   for host interface, \n  http://localhost:49543   for mirror")
+		println("Visit \n  http://localhost:" + HTTPPort + "   for host interface")
 	}
 
 	if SSLEnabled {
-		go OpenProgram("xdg-open", "https://localhost:49542")
+		go OpenProgram("xdg-open", "https://localhost:"+HTTPPort)
 	} else {
-		go OpenProgram("xdg-open", "http://localhost:49542")
+		go OpenProgram("xdg-open", "http://localhost:"+HTTPPort)
 	}
 
 	go func() {
@@ -160,11 +161,11 @@ func main() {
 	}()
 
 	if SSLEnabled {
-		if err := http.ListenAndServeTLS(":49542", wsroot+"server.crt", wsroot+"server.key", FullMux); err != nil {
+		if err := http.ListenAndServeTLS(":"+HTTPPort, wsroot+"server.crt", wsroot+"server.key", FullMux); err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		if err := http.ListenAndServe(":49542", FullMux); err != nil {
+		if err := http.ListenAndServe(":"+HTTPPort, FullMux); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -323,6 +324,14 @@ func RunArgs(args []string) bool {
 				}
 			}
 
+		case "-p", "-port":
+			if i+1 < len(args) {
+				if val := args[i+1]; len(val) != 0 {
+					HTTPPort = val
+					SkipNext = true
+				}
+			}
+
 		case "-s", "-safe":
 			AudioEnabled = false
 			DefaultVideoType = "mkv"
@@ -379,6 +388,8 @@ Usage :
 	-ws, -workspace: Sets the workspace folder. Default is '$HOME/Videos/screencorder'
 
 	-o, -output-dir: Sets the output folder. Default is '$HOME/Videos/screencorder'
+
+	-p, -port: Sets the port for the web server. Default is '49542'
 
     -s, -safe: Safe mode for better compatibility.
 	             This is same as '-vcodec auto -ns -t mkv'

@@ -275,7 +275,6 @@ async function uploadText(path, txt) {
   uploadBlob(path, blob);
 }
 
-//http://localhost:49542
 async function uploadBlob(path, blob) {
   fetch(`/api/` + path, { method: "POST", body: blob, mode: 'no-cors' })
     .then(response => response.text().then(value => { console.log("API POST : " + path, value);}))
@@ -286,7 +285,6 @@ function pad(num) {
   return s.substr(s.length - 10);
 }
 
-//http://localhost:49542
 async function GetURL(path) {
   fetch(`/api/` + path, { method: "GET" })
     .then(response => response.text().then(value => console.log("API GET : " + path, value)))

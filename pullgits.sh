@@ -2,7 +2,7 @@
 
 echo "Syncing with github"
 
-cd ../publish/
+cd ../screencorder-publish/
 
 
 cd ./linux.x86

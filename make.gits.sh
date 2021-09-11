@@ -2,10 +2,10 @@
 
 echo "Cleaning up"
 
-rm -rf ../publishgits
-mkdir -p ../publishgits
+rm -rf ../screencorder-publishgits
+mkdir -p ../screencorder-publishgits
 
-cd ../publishgits
+cd ../screencorder-publishgits
 
 mkdir linux.x86
 mkdir linux.amd64
